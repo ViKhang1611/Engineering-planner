@@ -1,0 +1,149 @@
+body {
+  background: var(--surface-canvas);
+  color: var(--text-primary);
+}
+.bg-white {
+  background-color: var(--surface-base);
+}
+.task-bar {
+  background: color-mix(in srgb, var(--planner-task) 18%, var(--surface-base));
+  border-color: var(--planner-task);
+}
+.critical-bar {
+  background: color-mix(
+    in srgb,
+    var(--planner-critical) 18%,
+    var(--surface-base)
+  );
+  border-color: var(--planner-critical);
+}
+.summary-bar,
+.summary-bar i {
+  background: var(--planner-summary);
+}
+.baseline-bar {
+  background: var(--planner-baseline);
+}
+.milestone {
+  background: var(--planner-milestone);
+  border-color: var(--planner-milestone);
+}
+.bar-caption {
+  background: var(--surface-base);
+  color: var(--text-primary);
+}
+.theme-switcher {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.theme-switcher select {
+  width: 148px;
+  min-width: 0;
+  max-width: 148px;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  padding: 6px;
+  border-radius: 5px;
+}
+.shell-context {
+  min-width: 0;
+  flex: 1;
+}
+.shell-context select {
+  min-width: 100px;
+  width: 100%;
+  max-width: 360px;
+}
+.shell-header .contract-code {
+  display: none;
+}
+.export-plan-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+.export-plan-menu > button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 9px;
+  border: 1px solid var(--border-default);
+  border-radius: 5px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 12px;
+}
+.export-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  width: 245px;
+  background: var(--surface-base);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  box-shadow: 0 8px 25px #0002;
+  z-index: 90;
+  padding: 5px;
+}
+.export-dropdown button {
+  width: 100%;
+  text-align: left;
+  padding: 10px;
+  background: transparent;
+  color: var(--text-primary);
+  border: 0;
+  border-radius: 4px;
+}
+.export-dropdown button:hover,
+.export-dropdown button:focus-visible {
+  background: var(--planner-hover);
+}
+.export-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+.export-form select {
+  padding: 8px;
+  border: 1px solid var(--border-default);
+  background: var(--surface-base);
+  color: var(--text-primary);
+  border-radius: 4px;
+}
+.export-status {
+  padding: 10px;
+  border: 1px solid var(--border-default);
+  background: var(--surface-muted);
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+@media (max-width: 1150px) {
+  .shell-header .storage-state {
+    display: none;
+  }
+  .shell-context h1 {
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .theme-switcher > span {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  body {
+    transition:
+      background-color 0.12s,
+      color 0.12s;
+  }
+}
+.export-plan-menu .modal-backdrop {
+  z-index: 120;
+}

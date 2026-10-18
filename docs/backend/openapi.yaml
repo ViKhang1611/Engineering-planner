@@ -1,0 +1,202 @@
+openapi: 3.1.0
+info:
+  title: ForgePlan Project Snapshot API
+  version: 2.0.0
+  description: Deployment contract; the standalone app does not run this server.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+paths:
+  /projects:
+    get:
+      summary: List projects authorized for the authenticated user
+      responses:
+        '200':
+          description: Authorized project summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [id, name, revision]
+                  properties:
+                    id: {type: string}
+                    name: {type: string}
+                    revision: {type: integer, minimum: 1}
+        '401': {description: Authentication required}
+    post:
+      summary: Create project after domain validation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Project'}
+      responses:
+        '201': {description: Created, headers: {ETag: {schema: {type: string}}}}
+        '401': {description: Authentication required}
+        '422': {description: Invalid domain data or dependency cycle}
+  /projects/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: {type: string}
+    get:
+      summary: Read project snapshot
+      responses:
+        '200':
+          description: Current snapshot
+          headers:
+            ETag: {schema: {type: string}, description: Quoted project revision}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Project'}
+        '401': {description: Authentication required}
+        '403': {description: Project access denied}
+        '404': {description: Not found}
+    put:
+      summary: Atomically replace snapshot after checking revision and scheduling
+      parameters:
+        - in: header
+          name: If-Match
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Project'}
+      responses:
+        '200':
+          description: Saved
+          headers:
+            ETag: {schema: {type: string}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Project'}
+        '401': {description: Authentication required}
+        '403': {description: Project write denied}
+        '412': {description: Revision conflict; fetch and reconcile before retry}
+        '422': {description: Invalid data, hierarchy or dependency cycle}
+        '428': {description: If-Match required}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer}
+  schemas:
+    Project:
+      type: object
+      required: [id, name, startDate, statusDate, calendar, tasks, dependencies, resources]
+      properties:
+        id: {type: string, minLength: 1}
+        name: {type: string, minLength: 1, maxLength: 200}
+        contractCode: {type: string}
+        client: {type: string}
+        startDate: {type: string, format: date}
+        statusDate: {type: string, format: date}
+        calendar:
+          type: object
+          required: [holidays]
+          properties:
+            holidays: {type: array, items: {type: string, format: date}}
+        tasks:
+          type: array
+          maxItems: 5000
+          items: {$ref: '#/components/schemas/Task'}
+        dependencies:
+          type: array
+          maxItems: 50000
+          items:
+            type: object
+            required: [id, predecessorId, successorId, type, lagDays]
+            properties:
+              id: {type: string}
+              predecessorId: {type: string}
+              successorId: {type: string}
+              type: {type: string, enum: [FS, SS, FF, SF]}
+              lagDays: {type: number}
+        resources:
+          type: array
+          items:
+            type: object
+            required: [id, name, kind, capacityHours]
+            properties:
+              id: {type: string}
+              name: {type: string}
+              kind: {type: string, enum: [engineer, equipment, material]}
+              capacityHours: {type: number, exclusiveMinimum: 0, maximum: 24}
+        activeBaselineId: {type: string}
+        baselines:
+          type: array
+          items:
+            type: object
+            required: [id, name, createdAt, tasks]
+            properties:
+              id: {type: string}
+              name: {type: string}
+              createdAt: {type: string, format: date-time}
+              calendar: {type: object}
+              tasks: {type: array, items: {type: object}}
+        progressHistory:
+          type: array
+          items:
+            type: object
+            required: [date, physicalPct]
+            properties:
+              date: {type: string, format: date}
+              physicalPct: {type: number, minimum: 0, maximum: 100}
+    Task:
+      type: object
+      required: [id, parentId, name, duration, physicalPct, assignments]
+      properties:
+        id: {type: string, minLength: 1}
+        parentId: {type: [string, 'null']}
+        name: {type: string, minLength: 1}
+        duration: {type: number, minimum: 0}
+        physicalPct: {type: number, minimum: 0, maximum: 100}
+        requestedStartDate: {type: string, format: date}
+        progressWeight: {type: number, exclusiveMinimum: 0}
+        progressMode: {type: string, enum: [manual, checklist]}
+        executionStatus: {type: string, enum: [todo, active, review, done]}
+        milestoneType: {type: string, enum: [FAT, SAT, OTHER]}
+        notes: {type: string}
+        budgetCost: {type: number, minimum: 0}
+        actualCost: {type: number, minimum: 0}
+        assignments:
+          type: array
+          items:
+            type: object
+            required: [resourceId, units]
+            properties:
+              resourceId: {type: string}
+              units: {type: number, exclusiveMinimum: 0, maximum: 4}
+              quantity: {type: number, minimum: 0}
+        checklist:
+          type: array
+          items:
+            type: object
+            required: [id, title, weight, checked]
+            properties:
+              id: {type: string}
+              title: {type: string}
+              weight: {type: number, exclusiveMinimum: 0}
+              checked: {type: boolean}
+        acceptance:
+          type: object
+          required: [accepted, date, reference]
+          properties:
+            accepted: {type: boolean}
+            date: {type: string}
+            reference: {type: string}
+        attachments:
+          type: array
+          items:
+            type: object
+            required: [id, name, type, size, data]
+            properties:
+              id: {type: string}
+              name: {type: string}
+              type: {type: string}
+              size: {type: integer, minimum: 0, maximum: 5242880}
+              data: {type: string, description: Data URL in standalone exchange; server maps to object storage}

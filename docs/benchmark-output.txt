@@ -1,0 +1,27 @@
+
+> engineering-planner@2.0.0 benchmark
+> node --import tsx scripts/benchmark.ts
+
+{
+  "environment": {
+    "node": "v24.19.0",
+    "os": "linux 6.18.55",
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "logicalCpus": 9
+  },
+  "independent": {
+    "tasks": 5000,
+    "links": 0,
+    "iterations": 20,
+    "medianMs": 34.17937600000005,
+    "p95Ms": 51.32012200000008
+  },
+  "linked": {
+    "tasks": 5000,
+    "links": 4702,
+    "iterations": 10,
+    "medianMs": 43.79616799999985,
+    "p95Ms": 67.49847999999997
+  },
+  "note": "Engine timings only; these are not browser frame rate measurements."
+}

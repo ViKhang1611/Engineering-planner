@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@import "./shared/styles/tokens.css";
+@import "./modules/schedule/schedule.css";
+@import "./app/app-shell.css";
+
+@import "./shared/styles/enterprise.css";
+
+@import "./theme/theme.css";
