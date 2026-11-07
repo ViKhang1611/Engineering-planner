@@ -12,7 +12,7 @@ import {
   toRows,
   encodeCsv,
   exportExcel,
-  importFile,
+  readImport,
 } from "./serialization";
 import type { ProjectInput } from "../../domain/project";
 import {
@@ -38,6 +38,7 @@ export function DataWorkspace() {
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [incoming, setIncoming] = useState<ProjectInput | null>(null),
+    [importWarnings, setImportWarnings] = useState<string[]>([]),
     [reset, setReset] = useState(false),
     [message, setMessage] = useState(""),
     [backup, setBackup] = useState<unknown>(null);
@@ -156,6 +157,26 @@ export function DataWorkspace() {
             >
               Excel .xlsx
             </button>
+            <button
+              disabled={busy}
+              onClick={() =>
+                run(async () => {
+                  const { exportMsProject } = await import("./msproject");
+                  const { xml, dropped } = exportMsProject(state.project);
+                  download(
+                    new Blob([xml], { type: "application/xml" }),
+                    `${name}.xml`,
+                  );
+                  setMessage(
+                    dropped.length
+                      ? `Đã xuất MS Project XML. MSPDI không có chỗ cho: ${dropped.join(", ")}; dùng JSON/Excel để giữ đầy đủ.`
+                      : "Đã xuất MS Project XML.",
+                  );
+                })
+              }
+            >
+              MS Project XML
+            </button>
           </div>
           <p className="muted">
             Excel có WBS Report để đọc và Project Data để nhập lại nguyên vẹn.
@@ -169,15 +190,19 @@ export function DataWorkspace() {
             án đang mở. Các dự án khác được giữ nguyên.
           </p>
           <label className="file-picker">
-            Chọn JSON / CSV / Excel
+            Chọn JSON / CSV / Excel / MS Project XML
             <input
               disabled={busy}
               type="file"
-              accept=".json,.csv,.xlsx"
+              accept=".json,.csv,.xlsx,.xml"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file)
-                  void run(async () => setIncoming(await importFile(file)));
+                  void run(async () => {
+                    const { project, warnings } = await readImport(file);
+                    setImportWarnings(warnings);
+                    setIncoming(project);
+                  });
                 e.target.value = "";
               }}
             />
@@ -292,6 +317,13 @@ export function DataWorkspace() {
             liên kết · {incoming.baselines?.length ?? 0} baseline
           </p>
           <p>Dữ liệu đã qua kiểm tra cấu trúc và bộ máy lập lịch.</p>
+          {importWarnings.length > 0 && (
+            <ul className="info-box import-warnings">
+              {importWarnings.map((w) => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+          )}
           <button
             className="primary-button"
             disabled={busy}

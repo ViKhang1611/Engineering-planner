@@ -42,7 +42,7 @@ npm run preview
 - **Nguồn lực:** tạo/sửa/xóa danh mục, công suất; heatmap 14 ngày, mở các task được gán; ô quá tải đỏ và danh sách xung đột; không tự dời lịch, nhưng **Gợi ý giãn lịch** xếp lại công việc theo công suất kỹ sư/thiết bị, cho xem trước danh sách việc bị dời và ngày kết thúc mới rồi áp dụng một lần (hoàn tác được). Vật tư hiển thị số lượng vào ngày bắt đầu task, không quy thành giờ.
 - **Kanban:** bốn cột, kéo thả và chọn trạng thái bằng bàn phím, tìm kiếm/lọc nguồn lực, danh sách ảo. Mọi cập nhật đi qua cùng store với Gantt.
 - **Dashboard:** KPI Physical/Duration, critical bị trễ, kỹ sư quá tải, mốc 14 ngày; S-Curve baseline/current/actual; cảnh báo lệch tiến độ; EVM PV/EV/AC/SPI/CPI/SV/CV khi có ngân sách và chi phí.
-- **Dữ liệu:** IndexedDB có transaction/revision; migration từ localStorage v1/v2; chống ghi đè giữa các tab; báo lỗi lưu; JSON/CSV/XLSX đầy đủ; backup/restore toàn workspace; Reset Demo Data cho dự án hiện tại.
+- **Dữ liệu:** IndexedDB có transaction/revision; migration từ localStorage v1/v2; chống ghi đè giữa các tab; báo lỗi lưu; JSON/CSV/XLSX đầy đủ; nhập/xuất MS Project XML (MSPDI, mở được bằng MS Project và nhập được vào Primavera P6; không mang checklist, FAT/SAT và tệp đính kèm); backup/restore toàn workspace; Reset Demo Data cho dự án hiện tại.
 
 ## Quy ước cần biết
 

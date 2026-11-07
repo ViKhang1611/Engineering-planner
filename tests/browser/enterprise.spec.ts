@@ -134,7 +134,7 @@ test("Kanban drag changes shared progress and spreadsheet round-trip works in br
   const downloadEvent = page.waitForEvent("download");
   await page.getByRole("button", { name: "Excel .xlsx", exact: true }).click();
   const download = await downloadEvent;
-  await page.locator('input[accept=".json,.csv,.xlsx"]').setInputFiles({
+  await page.locator('input[accept=".json,.csv,.xlsx,.xml"]').setInputFiles({
     name: download.suggestedFilename(),
     mimeType:
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -204,7 +204,7 @@ test("attachments live outside the workspace document and survive reload, export
   await page.getByRole("button", { name: "JSON", exact: true }).click();
   const json = await readFile((await (await jsonDownload).path())!, "utf8");
   expect(json).toContain(Buffer.from(content).toString("base64"));
-  await page.locator('input[accept=".json,.csv,.xlsx"]').setInputFiles({
+  await page.locator('input[accept=".json,.csv,.xlsx,.xml"]').setInputFiles({
     name: "project.json",
     mimeType: "application/json",
     buffer: Buffer.from(json),
@@ -232,4 +232,28 @@ test("leveling suggestion removes overloads in one undoable step", async ({
   await expect(
     page.getByRole("button", { name: "Gợi ý giãn lịch" }),
   ).toBeDisabled();
+});
+
+test("exports MS Project XML and imports it back", async ({ page }) => {
+  await page
+    .getByRole("button", { name: "Dữ liệu & Báo cáo", exact: true })
+    .click();
+  const downloadEvent = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "MS Project XML", exact: true })
+    .click();
+  const download = await downloadEvent;
+  expect(download.suggestedFilename()).toMatch(/\.xml$/);
+  const xml = await readFile((await download.path())!, "utf8");
+  expect(xml).toContain(
+    '<Project xmlns="http://schemas.microsoft.com/project">',
+  );
+  await expect(page.getByRole("status")).toContainText("MS Project XML");
+  await page.locator('input[accept=".json,.csv,.xlsx,.xml"]').setInputFiles({
+    name: "plan.xml",
+    mimeType: "application/xml",
+    buffer: Buffer.from(xml),
+  });
+  await page.getByRole("button", { name: "Thay thế dự án hiện tại" }).click();
+  await expect(page.getByRole("status")).toContainText("Đã nhập dự án");
 });

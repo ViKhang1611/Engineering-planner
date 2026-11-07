@@ -215,8 +215,22 @@ export async function exportExcel(project: ProjectInput) {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
 }
+/** Reads a project file and reports what could not be carried over. */
+export async function readImport(
+  file: File,
+): Promise<{ project: ProjectInput; warnings: string[] }> {
+  if (/\.xml$/i.test(file.name)) {
+    if (file.size > 50 * 1024 * 1024)
+      throw new Error("Tệp vượt giới hạn 50 MB");
+    const { importMsProject } = await import("./msproject");
+    const { project, warnings } = importMsProject(await file.text());
+    return { project: validateProject(project), warnings };
+  }
+  return { project: await importFile(file), warnings: [] };
+}
 export async function importFile(file: File): Promise<ProjectInput> {
   if (file.size > 50 * 1024 * 1024) throw new Error("Tệp vượt giới hạn 50 MB");
+  if (/\.xml$/i.test(file.name)) return (await readImport(file)).project;
   if (/\.json$/i.test(file.name))
     return validateProject(JSON.parse(await file.text()));
   if (/\.csv$/i.test(file.name)) return fromRows(decodeCsv(await file.text()));
@@ -250,7 +264,7 @@ export async function importFile(file: File): Promise<ProjectInput> {
     });
     return fromRows(rows);
   }
-  throw new Error("Chỉ hỗ trợ JSON, CSV và XLSX");
+  throw new Error("Chỉ hỗ trợ JSON, CSV, XLSX và MS Project XML");
 }
 export function download(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob),
