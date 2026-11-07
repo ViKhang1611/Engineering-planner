@@ -7,6 +7,7 @@ import {
   Users,
 } from "lucide-react";
 import { variance } from "../../../domain/execution";
+import { calendarDaysBetween } from "../engine/schedulingEngine";
 import { PredecessorCell } from "../../../shared/ui/PredecessorCell";
 import type {
   BaselineTask,
@@ -330,6 +331,18 @@ export const TaskRow = memo(function TaskRow({
                 }
               />
             </div>
+          )}
+          {task.deadline && (
+            <span
+              className={`deadline-marker ${task.deadlineMissed ? "deadline-missed" : ""}`}
+              style={{
+                left:
+                  (calendarDaysBetween(geometry.start, task.deadline) + 1) *
+                  geometry.dayWidth,
+              }}
+              title={`Hạn chót ${dateLabel(task.deadline)}${task.deadlineMissed ? " · đang trễ" : ""}`}
+              aria-label={`Hạn chót ${dateLabel(task.deadline)}${task.deadlineMissed ? ", đang trễ" : ""}`}
+            />
           )}
           {(pos.width > 20 || task.duration === 0) && (
             <span

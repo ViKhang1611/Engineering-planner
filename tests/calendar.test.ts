@@ -154,3 +154,59 @@ describe("configurable calendar", () => {
     expect(store.getState().actionError).toMatch(/ngày làm việc/);
   });
 });
+
+describe("deadlines", () => {
+  it("caps late finish, turns a miss into negative float and flags it", () => {
+    const met = project({ holidays: [] });
+    met.tasks[0].deadline = "2026-10-12";
+    const ok = scheduleProject(met).tasks[0];
+    expect(ok.deadlineMissed).toBe(false);
+    expect(ok.totalFloat).toBe(0); // project finish still binds
+
+    const missed = project({ holidays: [] });
+    missed.tasks[0].deadline = "2026-10-07"; // needs to finish Fri 10/09
+    const late = scheduleProject(missed).tasks[0];
+    expect(late.deadlineMissed).toBe(true);
+    expect(late.totalFloat).toBe(-2 * 480);
+    expect(late.isCritical).toBe(true);
+    // The schedule itself does not move.
+    expect(late.endDate).toBe("2026-10-09");
+  });
+
+  it("gives float back to a successor-free task when only the deadline binds", () => {
+    const p = project({ holidays: [] });
+    p.tasks.push({
+      id: "b",
+      parentId: null,
+      name: "B",
+      duration: 1,
+      physicalPct: 0,
+      assignments: [],
+      deadline: "2026-10-06",
+    });
+    const b = scheduleProject(p).tasks.find((t) => t.id === "b")!;
+    // B (1 day from Mon) may finish as late as Tue 10/06: 1 day of float.
+    expect(b.totalFloat).toBe(480);
+    expect(b.isCritical).toBe(false);
+  });
+
+  it("uses the last working day on or before a deadline on a day off", () => {
+    const p = project({ holidays: [] });
+    p.tasks[0].deadline = "2026-10-11"; // Sunday → Saturday 10/10 end of day
+    expect(scheduleProject(p).tasks[0].totalFloat).toBe(0);
+  });
+
+  it("rejects deadlines on summary tasks", () => {
+    const p = project({ holidays: [] });
+    p.tasks.push({
+      id: "child",
+      parentId: "a",
+      name: "C",
+      duration: 1,
+      physicalPct: 0,
+      assignments: [],
+    });
+    p.tasks[0].deadline = "2026-10-20";
+    expect(() => scheduleProject(p)).toThrow(/summary/);
+  });
+});

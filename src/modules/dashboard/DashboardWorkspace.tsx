@@ -186,6 +186,12 @@ export function DashboardWorkspace() {
           ],
           ["Rs", "Kỹ sư quá tải", overloaded.size, "kpi-tile-amber"],
           [
+            "Dl",
+            "Trễ hạn chót",
+            leaves.filter((t) => t.deadlineMissed).length,
+            "kpi-tile-rose",
+          ],
+          [
             "Ms",
             "Mốc sắp tới · 14 ngày",
             milestones.length,

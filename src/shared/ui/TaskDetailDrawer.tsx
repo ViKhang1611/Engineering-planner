@@ -132,6 +132,16 @@ export function TaskDetailDrawer({
                 />
               </label>
               <label>
+                Hạn chót
+                <input
+                  type="date"
+                  value={draft.deadline ?? ""}
+                  onChange={(e) =>
+                    patch({ deadline: e.target.value || undefined })
+                  }
+                />
+              </label>
+              <label>
                 Physical %
                 <input
                   type="number"

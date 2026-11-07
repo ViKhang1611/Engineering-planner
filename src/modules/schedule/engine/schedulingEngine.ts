@@ -328,6 +328,7 @@ export function scheduleProject(input: ProjectInput): ScheduleResult {
         [task.id],
       );
     if (task.requestedStartDate) parseDate(task.requestedStartDate);
+    if (task.deadline !== undefined) parseDate(task.deadline);
     const assigned = new Set<string>();
     for (const assignment of task.assignments) {
       if (
@@ -454,8 +455,21 @@ export function scheduleProject(input: ProjectInput): ScheduleResult {
         ),
       );
   }
+  // End of the last working day on or before each deadline: the start of
+  // the first working day after it, on the working-minute axis.
+  const deadlineFinish = new Map<string, number>();
+  for (const task of leaves)
+    if (task.deadline)
+      deadlineFinish.set(
+        task.id,
+        clock.startOf(addCalendarDays(task.deadline, 1)),
+      );
   const late = new Map(
-    leaves.map((task) => [task.id, finish - durations.get(task.id)!]),
+    leaves.map((task) => [
+      task.id,
+      Math.min(finish, deadlineFinish.get(task.id) ?? finish) -
+        durations.get(task.id)!,
+    ]),
   );
   for (let i = topological.length - 1; i >= 0; i--) {
     const id = topological[i];
@@ -528,6 +542,12 @@ export function scheduleProject(input: ProjectInput): ScheduleResult {
         : physicalPct;
       weights.set(task.id, weight);
       workHours = parts.reduce((sum, child) => sum + child.workHours, 0);
+      if (task.deadline)
+        throw new SchedulingError(
+          "SUMMARY_DEADLINE",
+          "Đặt hạn chót cho công việc lá, không đặt cho summary.",
+          [task.id],
+        );
       if (task.assignments.length)
         throw new SchedulingError(
           "SUMMARY_ASSIGNMENT",
@@ -616,7 +636,12 @@ export function scheduleProject(input: ProjectInput): ScheduleResult {
       lateStart: ls,
       lateFinish: lf,
       totalFloat: isSummary ? 0 : ls - es,
-      isCritical: !isSummary && ls - es === 0,
+      // Negative float (a deadline that cannot be met) is critical too.
+      isCritical: !isSummary && ls - es <= 0,
+      deadlineMissed:
+        !isSummary &&
+        deadlineFinish.has(task.id) &&
+        ef > deadlineFinish.get(task.id)!,
       workHours,
       overloadedResourceIds: [],
     });

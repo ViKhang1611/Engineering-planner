@@ -976,3 +976,19 @@ svg.lucide {
 .gantt-row-clip {
   background: inherit;
 }
+
+/* Deadline: a small downward triangle at the end of the deadline day. */
+.deadline-marker {
+  position: absolute;
+  top: 3px;
+  width: 0;
+  height: 0;
+  margin-left: -5px;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid var(--planner-success);
+  pointer-events: auto;
+}
+.deadline-marker.deadline-missed {
+  border-top-color: var(--planner-critical);
+}

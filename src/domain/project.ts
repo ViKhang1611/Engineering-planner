@@ -41,6 +41,11 @@ export interface Task {
   duration: number;
   physicalPct: number;
   requestedStartDate?: string;
+  /**
+   * Finish no later than this date (end of its last working day). Does not
+   * move the task; it caps the late finish, so a miss shows as negative float.
+   */
+  deadline?: string;
   progressWeight?: number;
   checklist?: { id: string; title: string; checked: boolean; weight: number }[];
   progressMode?: "manual" | "checklist";
@@ -97,6 +102,8 @@ export interface ScheduledTask extends Task {
   lateFinish: number;
   totalFloat: number;
   isCritical: boolean;
+  /** Early finish is after the task's deadline. */
+  deadlineMissed: boolean;
   durationPct: number;
   workHours: number;
   overloadedResourceIds: string[];
