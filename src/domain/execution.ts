@@ -1,5 +1,23 @@
 import { parseDate } from "../modules/schedule/engine/schedulingEngine";
-import type { ProjectInput, ScheduledTask, Task } from "./project";
+import type {
+  ExecutionRules,
+  ProjectInput,
+  ScheduledTask,
+  Task,
+} from "./project";
+export const DEFAULT_EXECUTION_RULES: ExecutionRules = {
+  activeMinPct: 1,
+  reviewPct: 90,
+};
+export function validateExecutionRules(rules: ExecutionRules) {
+  const ok = (v: number) => Number.isFinite(v) && v >= 1 && v <= 99;
+  if (!rules || !ok(rules.activeMinPct) || !ok(rules.reviewPct))
+    throw new Error("Tỷ lệ Kanban phải từ 1 đến 99%.");
+  if (rules.activeMinPct > rules.reviewPct)
+    throw new Error(
+      "Tỷ lệ tối thiểu khi đang thi công không được lớn hơn tỷ lệ chờ nghiệm thu.",
+    );
+}
 export const statuses = {
   todo: "Chưa bắt đầu",
   active: "Đang thi công",
@@ -39,7 +57,12 @@ export function normalizeExecution(project: ProjectInput) {
     task.executionStatus = taskStatus(task);
   }
 }
-export function transition(task: Task, status: ExecutionStatus, date: string) {
+export function transition(
+  task: Task,
+  status: ExecutionStatus,
+  date: string,
+  rules: ExecutionRules = DEFAULT_EXECUTION_RULES,
+) {
   task.executionStatus = status;
   if (status === "done" && !task.checklist?.length)
     task.progressMode = "manual";
@@ -59,7 +82,9 @@ export function transition(task: Task, status: ExecutionStatus, date: string) {
     };
     if (task.progressMode !== "checklist")
       task.physicalPct =
-        status === "review" ? 90 : Math.min(99, Math.max(1, task.physicalPct));
+        status === "review"
+          ? rules.reviewPct
+          : Math.min(99, Math.max(rules.activeMinPct, task.physicalPct));
     else if (
       status === "active" &&
       task.checklist?.length &&
@@ -87,6 +112,7 @@ export function overallProgress(tasks: ScheduledTask[], planned = false) {
 export function validateExtensions(p: ProjectInput) {
   if (!p || !Array.isArray(p.tasks))
     throw new Error("Danh sách công việc không hợp lệ");
+  if (p.executionRules !== undefined) validateExecutionRules(p.executionRules);
   let attachmentBytes = 0;
   for (const t of p.tasks) {
     for (const a of t.assignments ?? [])

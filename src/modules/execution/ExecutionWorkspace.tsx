@@ -2,12 +2,13 @@ import { useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useProjectStore } from "../../store/useProjectStore";
 import {
+  DEFAULT_EXECUTION_RULES,
   statuses,
   taskStatus,
   transition,
   type ExecutionStatus,
 } from "../../domain/execution";
-import type { ScheduledTask } from "../../domain/project";
+import type { ExecutionRules, ScheduledTask } from "../../domain/project";
 import { TaskDetailDrawer } from "../../shared/ui/TaskDetailDrawer";
 function Column({
   status,
@@ -95,6 +96,58 @@ function Column({
     </section>
   );
 }
+/** Per-project Physical % used when manual-progress cards are dragged. */
+function ExecutionRulesBar({
+  rules,
+  save,
+}: {
+  rules: ExecutionRules;
+  save: (rules: ExecutionRules) => boolean;
+}) {
+  const [active, setActive] = useState(String(rules.activeMinPct)),
+    [review, setReview] = useState(String(rules.reviewPct));
+  const dirty =
+    Number(active) !== rules.activeMinPct || Number(review) !== rules.reviewPct;
+  return (
+    <form
+      className="execution-rules"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save({ activeMinPct: Number(active), reviewPct: Number(review) });
+      }}
+    >
+      <span>Khi kéo thẻ nhập tay:</span>
+      <label>
+        Đang thi công tối thiểu
+        <input
+          type="number"
+          min={1}
+          max={99}
+          required
+          value={active}
+          onChange={(e) => setActive(e.target.value)}
+        />
+        %
+      </label>
+      <label>
+        Chờ nghiệm thu
+        <input
+          type="number"
+          min={1}
+          max={99}
+          required
+          value={review}
+          onChange={(e) => setReview(e.target.value)}
+        />
+        %
+      </label>
+      <button className="secondary-button" disabled={!dirty}>
+        Lưu tỷ lệ
+      </button>
+      <small>Thẻ đo theo checklist dùng % của checklist.</small>
+    </form>
+  );
+}
 export function ExecutionWorkspace() {
   const state = useProjectStore(),
     [search, setSearch] = useState(""),
@@ -111,7 +164,7 @@ export function ExecutionWorkspace() {
     state.commit((p) => {
       const t = p.tasks.find((t) => t.id === id);
       if (!t) throw new Error("Công việc không tồn tại");
-      transition(t, status, p.statusDate);
+      transition(t, status, p.statusDate, p.executionRules);
     }, `Đã chuyển sang ${statuses[status]}`);
   };
   return (
@@ -148,6 +201,14 @@ export function ExecutionWorkspace() {
           {state.error}
         </p>
       )}
+      <ExecutionRulesBar
+        rules={state.project.executionRules ?? DEFAULT_EXECUTION_RULES}
+        save={(rules) =>
+          state.commit((p) => {
+            p.executionRules = rules;
+          }, "Đã lưu tỷ lệ khi kéo thả Kanban")
+        }
+      />
       <div className="kanban-board">
         {(Object.keys(statuses) as ExecutionStatus[]).map((status) => (
           <Column

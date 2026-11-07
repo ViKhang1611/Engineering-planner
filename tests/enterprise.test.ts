@@ -216,3 +216,37 @@ describe("Enterprise integrated domain", () => {
     expect(() => fromRows(toRows(p))).toThrow();
   });
 });
+
+describe("Kanban drag percentages", () => {
+  it("uses the project's rules for manual tasks and validates them", async () => {
+    const { validateExtensions } = await import("../src/domain/execution");
+    const s = setup();
+    expect(
+      s().commit((p) => {
+        p.executionRules = { activeMinPct: 10, reviewPct: 80 };
+      }, "rules"),
+    ).toBe(true);
+    const drag = (status: "active" | "review") =>
+      s().commit((p) => {
+        const t = p.tasks.find((t) => t.id === "plc")!;
+        t.progressMode = "manual";
+        transition(t, status, p.statusDate, p.executionRules);
+      }, status);
+    s().updateTask("plc", { physicalPct: 0 });
+    drag("active");
+    expect(s().project.tasks.find((t) => t.id === "plc")!.physicalPct).toBe(10);
+    drag("review");
+    expect(s().project.tasks.find((t) => t.id === "plc")!.physicalPct).toBe(80);
+    // Defaults stay 1% / 90% when no rules are set.
+    const plain = createSeed().tasks.find((t) => t.id === "plc")!;
+    plain.physicalPct = 0;
+    plain.progressMode = "manual";
+    transition(plain, "review", "2026-10-20");
+    expect(plain.physicalPct).toBe(90);
+    const bad = createSeed();
+    bad.executionRules = { activeMinPct: 95, reviewPct: 50 };
+    expect(() => validateExtensions(bad)).toThrow();
+    bad.executionRules = { activeMinPct: 0, reviewPct: 50 };
+    expect(() => validateExtensions(bad)).toThrow();
+  });
+});

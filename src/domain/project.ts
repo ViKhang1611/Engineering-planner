@@ -65,6 +65,14 @@ export interface ProjectInput {
   baselines?: Baseline[];
   activeBaselineId?: string;
   progressHistory?: { date: string; physicalPct: number }[];
+  /** Physical % applied when a manual-progress card is dragged on the Kanban. */
+  executionRules?: ExecutionRules;
+}
+export interface ExecutionRules {
+  /** Minimum Physical % when moved to "Đang thi công" (1–99). */
+  activeMinPct: number;
+  /** Physical % when moved to "Chờ nghiệm thu" (1–99, ≥ activeMinPct). */
+  reviewPct: number;
 }
 export interface ScheduledTask extends Task {
   wbs: string;

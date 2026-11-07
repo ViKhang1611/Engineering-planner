@@ -81,6 +81,27 @@
 .module-toolbar > div:first-child {
   flex: 1;
 }
+/* Kanban drag percentages (per project). */
+.execution-rules {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: -8px 0 14px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.execution-rules label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.execution-rules input {
+  width: 58px;
+}
+.execution-rules small {
+  color: var(--text-muted);
+}
 .module-toolbar p {
   margin: 4px 0;
   color: var(--color-slate-500);
