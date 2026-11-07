@@ -2,9 +2,6 @@ body {
   background: var(--wallpaper-bg, var(--surface-canvas));
   color: var(--text-primary);
 }
-.bg-white {
-  background-color: var(--surface-base);
-}
 .task-bar {
   background: color-mix(in srgb, var(--planner-task) 18%, var(--surface-base));
   border-color: var(--planner-task);
