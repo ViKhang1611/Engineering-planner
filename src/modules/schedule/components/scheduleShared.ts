@@ -33,7 +33,11 @@ export const cols = [
   { key: "durationPct", label: "Duration %", width: 94 },
   { key: "variance", label: "Variance (d)", width: 100 },
 ] as const;
-export const GRID_WIDTH = cols.reduce((sum, column) => sum + column.width, 0);
+export type Column = (typeof cols)[number];
+export type ColumnKey = Column["key"];
+export const gridWidthOf = (columns: readonly Column[]) =>
+  columns.reduce((sum, column) => sum + column.width, 0);
+export const GRID_WIDTH = gridWidthOf(cols);
 
 export const dateLabel = (value: string) =>
   `${value.slice(8, 10)}/${value.slice(5, 7)}/${value.slice(0, 4)}`;

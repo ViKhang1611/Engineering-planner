@@ -663,3 +663,46 @@ button:disabled {
   max-height: 280px;
   overflow: auto;
 }
+
+/*
+ * Printing (Dashboard › In / Lưu PDF): only the module content, on white,
+ * without the shell, toolbars, glass effects or decorative banners.
+ */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 12mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  .shell-sidebar,
+  .shell-header,
+  .shell-viewbar,
+  .shell-alert,
+  .skip-link,
+  .floating-theme-dock,
+  .creative-hero-banner,
+  .print-hidden,
+  .module-toolbar button,
+  .error-toast {
+    display: none !important;
+  }
+  .enterprise-shell,
+  .shell-body,
+  .shell-main {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  * {
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+  .panel,
+  .kpi {
+    break-inside: avoid;
+  }
+}

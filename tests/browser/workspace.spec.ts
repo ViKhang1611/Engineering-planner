@@ -211,3 +211,36 @@ test("an edit in one tab appears in another open tab without reload", async ({
     page.locator('[data-task-id="survey"] .grid-cell').nth(2),
   ).toHaveText("3d");
 });
+
+test("hides WBS columns per device and keeps the choice after reload", async ({
+  page,
+}) => {
+  const header = page.locator(".dual-header .column-label");
+  await expect(header.filter({ hasText: "Nguồn lực" })).toHaveCount(1);
+  await page.locator(".column-menu > summary").click();
+  await page.locator(".column-menu-panel").getByLabel("Nguồn lực").uncheck();
+  await expect(header.filter({ hasText: "Nguồn lực" })).toHaveCount(0);
+  await expect(
+    page.locator('[data-task-id="drawing"] [data-column="resources"]'),
+  ).toHaveCount(0);
+  await page.reload();
+  await expect(
+    page.locator(".dual-header .column-label").filter({ hasText: "Nguồn lực" }),
+  ).toHaveCount(0);
+  await expect(
+    page.locator(".dual-header .column-label").filter({ hasText: "WBS" }),
+  ).toHaveCount(1);
+});
+
+test("dashboard print view hides the shell", async ({ page }) => {
+  await page
+    .getByRole("button", { name: "Dashboard điều hành", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "In / Lưu PDF" }),
+  ).toBeVisible();
+  await page.emulateMedia({ media: "print" });
+  await expect(page.locator(".shell-sidebar")).toBeHidden();
+  await expect(page.locator(".shell-header")).toBeHidden();
+  await expect(page.locator(".kpi-grid")).toBeVisible();
+});

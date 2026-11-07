@@ -19,15 +19,14 @@ import { InlineCell } from "./InlineCell";
 import { useIsHovered, type HoverStore } from "./hoverStore";
 import {
   barPosition,
-  cols,
   dateLabel,
-  GRID_WIDTH,
   gridShift,
   number,
   paneWidth,
   ROW,
   timelineLeft,
   timelineShift,
+  type Column,
   type TimelineGeometry,
 } from "./scheduleShared";
 
@@ -66,6 +65,9 @@ export interface TaskRowProps {
   drag: { mode: DragMode; delta: number } | null;
   hover: HoverStore;
   actions: RowActions;
+  /** Visible WBS grid columns (stable array) and their total width. */
+  columns: readonly Column[];
+  gridWidth: number;
 }
 
 /**
@@ -92,6 +94,8 @@ export const TaskRow = memo(function TaskRow({
   drag,
   hover,
   actions,
+  columns,
+  gridWidth,
 }: TaskRowProps) {
   const hovered = useIsHovered(hover, task.id);
   const highlighted = chosen || hovered,
@@ -131,9 +135,9 @@ export const TaskRow = memo(function TaskRow({
       <div className="grid-row-clip" style={{ width: paneWidth }}>
         <div
           className="grid-cells"
-          style={{ width: GRID_WIDTH, transform: gridShift }}
+          style={{ width: gridWidth, transform: gridShift }}
         >
-          {cols.map((column) => (
+          {columns.map((column) => (
             <div
               key={column.key}
               role="gridcell"

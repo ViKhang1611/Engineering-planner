@@ -992,3 +992,36 @@ svg.lucide {
 .deadline-marker.deadline-missed {
   border-top-color: var(--planner-critical);
 }
+
+/* "Cột" menu: show/hide WBS grid columns. */
+.column-menu {
+  position: relative;
+}
+.column-menu > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.column-menu > summary::-webkit-details-marker {
+  display: none;
+}
+.column-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 40;
+  display: grid;
+  gap: 6px;
+  min-width: 170px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--surface-base);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+  font-size: 12px;
+}
+.column-menu-panel label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}

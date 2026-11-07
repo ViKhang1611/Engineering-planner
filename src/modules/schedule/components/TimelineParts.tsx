@@ -1,13 +1,12 @@
 import { memo } from "react";
 import {
-  cols,
   dateLabel,
-  GRID_WIDTH,
   gridShift,
   HEADER,
   paneWidth,
   timelineLeft,
   timelineShift,
+  type Column,
   type Zoom,
 } from "./scheduleShared";
 
@@ -26,7 +25,11 @@ export const ScheduleHeader = memo(function ScheduleHeader({
   timelineWidth,
   zoom,
   statusDate,
+  columns,
+  gridWidth,
 }: {
+  columns: readonly Column[];
+  gridWidth: number;
   days: TimelineDay[];
   lastDay: number;
   dayWidth: number;
@@ -41,7 +44,7 @@ export const ScheduleHeader = memo(function ScheduleHeader({
   return (
     <div className="dual-header" style={{ height: HEADER }}>
       <div className="grid-header-clip" style={{ width: paneWidth }}>
-        <div style={{ width: GRID_WIDTH, transform: gridShift }}>
+        <div style={{ width: gridWidth, transform: gridShift }}>
           <div className="header-top">
             <span>WORK BREAKDOWN STRUCTURE</span>
             <span className="text-slate-400 font-normal">
@@ -49,7 +52,7 @@ export const ScheduleHeader = memo(function ScheduleHeader({
             </span>
           </div>
           <div className="flex h-7">
-            {cols.map((column) => (
+            {columns.map((column) => (
               <div
                 key={column.key}
                 className={`column-label ${column.key === "name" ? "" : "numeric"}`}

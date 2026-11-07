@@ -1,4 +1,4 @@
-import { memo, useRef } from "react";
+import { memo, useRef, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -6,6 +6,7 @@ import {
   ArrowRightToLine,
   CalendarDays,
   CircleHelp,
+  Columns3,
   Download,
   Flag,
   GitBranch,
@@ -22,7 +23,14 @@ import {
   X,
 } from "lucide-react";
 import { ToolButton } from "./ToolButton";
-import { dateLabel, number, type Zoom } from "./scheduleShared";
+import {
+  cols,
+  dateLabel,
+  number,
+  type ColumnKey,
+  type Zoom,
+} from "./scheduleShared";
+import { FIXED_COLUMNS } from "./useColumnPrefs";
 
 /** Project title, dates and the three headline metrics. */
 export const ScheduleHeading = memo(function ScheduleHeading({
@@ -225,7 +233,11 @@ export function ViewRibbon({
   onExport,
   onImport,
   onLoad,
+  hiddenColumns,
+  onToggleColumn,
 }: {
+  hiddenColumns: ReadonlySet<ColumnKey>;
+  onToggleColumn: (key: ColumnKey) => void;
   visibleCount: number;
   query: string;
   onQuery: (value: string) => void;
@@ -237,6 +249,7 @@ export function ViewRibbon({
   onLoad: () => void;
 }) {
   const importInput = useRef<HTMLInputElement>(null);
+  const [columnsOpen, setColumnsOpen] = useState(false);
   return (
     <div className="view-ribbon">
       <div className="flex items-center gap-2 font-medium">
@@ -259,6 +272,36 @@ export function ViewRibbon({
         )}
       </div>
       <div className="flex-1" />
+      <details
+        className="column-menu"
+        onToggle={(e) => setColumnsOpen(e.currentTarget.open)}
+      >
+        <summary className="text-action">
+          <Columns3 size={14} />
+          Cột
+        </summary>
+        {/* Rendered only while open: no hidden duplicate labels in the DOM. */}
+        {columnsOpen && (
+          <div
+            className="column-menu-panel"
+            role="group"
+            aria-label="Cột hiển thị"
+          >
+            {cols
+              .filter((c) => !FIXED_COLUMNS.includes(c.key))
+              .map((c) => (
+                <label key={c.key}>
+                  <input
+                    type="checkbox"
+                    checked={!hiddenColumns.has(c.key)}
+                    onChange={() => onToggleColumn(c.key)}
+                  />
+                  {c.label}
+                </label>
+              ))}
+          </div>
+        )}
+      </details>
       <button
         className="text-action"
         onClick={onDetails}

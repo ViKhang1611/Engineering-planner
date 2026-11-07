@@ -27,7 +27,7 @@ import type { ProjectInput, ScheduledTask } from "../engine/types";
 import {
   cols,
   dayWidthFor,
-  GRID_WIDTH,
+  gridWidthOf,
   ROW,
   type TimelineGeometry,
   type Zoom,
@@ -55,6 +55,7 @@ import {
   ProposalDialog,
 } from "./ScheduleDialogs";
 import { useGanttDrag } from "./useGanttDrag";
+import { useColumnPrefs } from "./useColumnPrefs";
 import { shiftLabel, workWeekLabel } from "../../../domain/calendarText";
 
 type Dialog = "link" | "calendar" | "help" | "load" | "baseline" | null;
@@ -129,6 +130,9 @@ export function ScheduleWorkspace() {
       successor: "",
     });
   const [hover] = useState(createHoverStore);
+  const columnPrefs = useColumnPrefs();
+  const { columns } = columnPrefs;
+  const gridWidth = gridWidthOf(columns);
   const { drag, startDrag, proposal, setProposal } = useGanttDrag();
   const viewport = useRef<HTMLDivElement>(null),
     container = useRef<HTMLDivElement>(null),
@@ -506,6 +510,8 @@ export function ScheduleWorkspace() {
         onExport={exportData}
         onImport={importData}
         onLoad={() => setDialog("load")}
+        hiddenColumns={columnPrefs.hidden}
+        onToggleColumn={columnPrefs.toggle}
       />
       <section
         ref={container}
@@ -526,13 +532,15 @@ export function ScheduleWorkspace() {
           timelineWidth={timelineWidth}
           zoom={zoom}
           statusDate={project.statusDate}
+          columns={columns}
+          gridWidth={gridWidth}
         />
         <div
           ref={viewport}
           role="grid"
           aria-label="Công việc dự án"
           aria-rowcount={rows.length}
-          aria-colcount={cols.length}
+          aria-colcount={columns.length}
           className="shared-viewport"
           onWheel={(event) =>
             scrollHorizontal(
@@ -582,6 +590,8 @@ export function ScheduleWorkspace() {
                   drag={drag?.id === task.id ? drag : null}
                   hover={hover}
                   actions={rowActions}
+                  columns={columns}
+                  gridWidth={gridWidth}
                 />
               );
             })}
@@ -625,7 +635,7 @@ export function ScheduleWorkspace() {
             style={{ width: pane }}
             onScroll={(event) => setGridX(event.currentTarget.scrollLeft)}
           >
-            <div style={{ width: GRID_WIDTH, height: 1 }} />
+            <div style={{ width: gridWidth, height: 1 }} />
           </div>
           <div className="w-1 bg-slate-200" />
           <div

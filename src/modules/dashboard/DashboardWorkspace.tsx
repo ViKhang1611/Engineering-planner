@@ -148,6 +148,13 @@ export function DashboardWorkspace() {
         >
           Ghi nhận tiến độ hôm báo cáo
         </button>
+        <button
+          className="secondary-button print-hidden"
+          onClick={() => window.print()}
+          title="Mở hộp thoại in; chọn “Lưu dưới dạng PDF” để xuất tệp"
+        >
+          In / Lưu PDF
+        </button>
       </div>
       <CreativeHeroBanner
         badgeCode="FP"
