@@ -48,6 +48,18 @@ export interface ScheduleSession extends Snapshot {
   clearError: () => void;
   setError: (message: string) => void;
 }
+/**
+ * Working copy for a commit. Baselines are immutable snapshots (a capture adds
+ * a new one; nothing edits one in place) and each holds a full copy of every
+ * task, so they are shared by reference instead of deep-cloned on every edit.
+ * The array itself is copied so mutators can still add or remove baselines.
+ */
+export function cloneForCommit(project: ProjectInput): ProjectInput {
+  const { baselines, ...rest } = project;
+  const copy = structuredClone(rest) as ProjectInput;
+  if (baselines !== undefined) copy.baselines = [...baselines];
+  return copy;
+}
 /** Session actions write into their project record in the one workspace store. */
 export function createScheduleSession(
   set: (
@@ -81,7 +93,7 @@ export function createScheduleSession(
     setError: (error) => set({ error }),
     commit: (mutate, message) => {
       const state = get(),
-        project = structuredClone(state.project);
+        project = cloneForCommit(state.project);
       try {
         mutate(project);
         project.id = state.project.id; // Workspace identity cannot be changed by import.

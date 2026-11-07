@@ -88,3 +88,12 @@ Seed đặt capacity 8h/ngày cho cả kỹ sư và thiết bị. Duration khôn
 Baseline copy ID, ngày/thời điểm bắt đầu–kết thúc, duration, work và Physical %; không lưu tham chiếu tới kết quả hiện hành. Một baseline đang hoạt động được lưu cùng dự án. Khi sửa, schedule session clone input, chạy toàn bộ engine, chỉ thay state và ghi localStorage nếu tính thành công. Lỗi lịch không tạo một nửa dữ liệu đã cập nhật.
 
 Undo/redo lưu tối đa 10 snapshot đầu vào/baseline. Không lưu bản sao toàn bộ DOM hoặc computed schedule vào localStorage. Khi reload/import, engine tính lại để có dữ liệu dẫn xuất mới. Xuất/nhập JSON giữ baseline và ID; WBS được tạo lại từ cây.
+
+## Hiệu năng
+
+Đo bằng `npm run benchmark` (riêng engine) và `scripts/commit-profile.ts` (một lần sửa trọn vẹn, chia theo bước). Hai tối ưu không đổi kết quả tính:
+
+- **Cache ngày:** `parseDate` kiểm tra chặt (regex, `Date`, so lại `toISOString`) và từng chiếm khoảng 36% thời gian engine vì được gọi ở mỗi bước tìm ngày làm việc. Mỗi chuỗi ngày giờ chỉ kiểm tra một lần (`dateMs`, giới hạn 100.000 mục); `parseDate` vẫn trả `Date` mới cho người gọi. Thứ trong tuần tính bằng số học trên số ngày từ 1970-01-01; ngày lễ tra bằng `Set` cache theo mảng `holidays`.
+- **Sao chép khi commit:** `cloneForCommit` sao chép sâu mọi thứ trừ baseline. Baseline là bản chụp bất biến của toàn bộ task (chốt mới chỉ thêm bản mới), nên được dùng chung tham chiếu; mảng `baselines` vẫn được sao chép để có thể thêm/bớt. Không được sửa một baseline tại chỗ.
+
+**Chưa chuyển CPM sang Web Worker.** Sau tối ưu, một lần sửa trên 5.000 task/4.702 liên kết mất khoảng 30 ms trên máy tham chiếu; máy yếu hơn 3–4 lần vẫn dưới khoảng 120 ms. Chuyển sang Worker buộc `commit` thành bất đồng bộ, trong khi nhiều nơi dựa vào kết quả đồng bộ (`updateTask`/`link`/`updateSettings` trả `boolean` để đóng Drawer hoặc báo lỗi ngay, undo/redo, kiểm tra dữ liệu nhập), và phải truyền project qua `postMessage` (tự nó là một lần sao chép tương đương `structuredClone`). Nên xem lại khi giới hạn 5.000 task được nâng, hoặc khi đo trên máy người dùng vượt khoảng 100 ms mỗi lần sửa.

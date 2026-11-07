@@ -25,12 +25,14 @@
 
 ## Hiệu năng đo được
 
-Node 24.19.0, Linux, Intel Xeon Platinum 8573C (9 logical CPUs được báo cáo):
+Node 24.22.0, Windows 11, Intel Core i5-14400F (16 logical CPUs). Cùng máy, trước và sau khi cache phần xử lý ngày (xem `docs/ENGINE.md` › Hiệu năng):
 
-| Fixture                      |   Median |      P95 |
-| ---------------------------- | -------: | -------: |
-| 5.000 task, không dependency | 34,18 ms | 51,32 ms |
-| 5.000 task, 4.702 dependency | 43,80 ms | 67,50 ms |
+| Fixture                      | Median trước | Median sau |  P95 sau |
+| ---------------------------- | -----------: | ---------: | -------: |
+| 5.000 task, không dependency |     21,22 ms |   10,67 ms | 15,23 ms |
+| 5.000 task, 4.702 dependency |     31,38 ms |   14,25 ms | 25,32 ms |
+
+Một lần sửa trọn vẹn (`updateTask` gồm sao chép, kiểm tra, lập lịch) trên bộ 4.702 dependency: khoảng 40 ms trước, 29–32 ms sau, kể cả khi có 3 baseline (`node --import tsx scripts/commit-profile.ts`).
 
 Đây là thời gian engine, không phải FPS của trình duyệt. Scroll dùng virtualization và không chạy lại engine; chưa chứng nhận 60fps trên mọi cấu hình máy người dùng. Chi tiết trong `benchmark-output.txt`.
 

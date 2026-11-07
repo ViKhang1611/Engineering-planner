@@ -19,28 +19,54 @@ export class SchedulingError extends Error {
     this.name = "SchedulingError";
   }
 }
-export function parseDate(value: string): Date {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value))
+/**
+ * Validated ISO date → UTC midnight in ms. Date math dominated engine time
+ * (regex + Date + toISOString on every working-day step), and a plan only
+ * touches a few thousand distinct dates, so each string is validated once.
+ * Bounded so a long-running session cannot grow it without limit.
+ */
+const dateMsCache = new Map<string, number>();
+const DATE_CACHE_LIMIT = 100_000;
+function dateMs(value: string): number {
+  const cached = dateMsCache.get(value);
+  if (cached !== undefined) return cached;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
     throw new SchedulingError("INVALID_DATE", `Ngày không hợp lệ: ${value}`);
-  const date = new Date(`${value}T00:00:00Z`);
-  if (
-    !Number.isFinite(date.getTime()) ||
-    date.toISOString().slice(0, 10) !== value
-  )
+  const ms = Date.parse(`${value}T00:00:00Z`);
+  if (!Number.isFinite(ms) || new Date(ms).toISOString().slice(0, 10) !== value)
     throw new SchedulingError("INVALID_DATE", `Ngày không tồn tại: ${value}`);
-  return date;
+  if (dateMsCache.size >= DATE_CACHE_LIMIT) dateMsCache.clear();
+  dateMsCache.set(value, ms);
+  return ms;
+}
+/** Validates an ISO date (YYYY-MM-DD) and returns a fresh Date at UTC midnight. */
+export function parseDate(value: string): Date {
+  return new Date(dateMs(value));
 }
 export const isoDate = (date: Date) => date.toISOString().slice(0, 10);
+const isoFromMs = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 export function addCalendarDays(value: string, days: number): string {
-  return isoDate(new Date(parseDate(value).getTime() + days * DAY_MS));
+  return isoFromMs(dateMs(value) + days * DAY_MS);
 }
 export function calendarDaysBetween(a: string, b: string): number {
-  return Math.round((parseDate(b).getTime() - parseDate(a).getTime()) / DAY_MS);
+  return Math.round((dateMs(b) - dateMs(a)) / DAY_MS);
+}
+/** Holiday lookup as a Set, cached per holidays array (arrays are replaced, not mutated, on edit). */
+const holidaySets = new WeakMap<string[], { size: number; set: Set<string> }>();
+function holidaySet(calendar: Calendar): Set<string> {
+  const list = calendar.holidays;
+  const cached = holidaySets.get(list);
+  // Length check guards against an array mutated in place after caching.
+  if (cached && cached.size === list.length) return cached.set;
+  const set = new Set(list);
+  holidaySets.set(list, { size: list.length, set });
+  return set;
 }
 export function isWorkingDay(value: string, calendar: Calendar): boolean {
-  return (
-    parseDate(value).getUTCDay() !== 0 && !calendar.holidays.includes(value)
-  );
+  // Days since 1970-01-01 (a Thursday); +4 maps it to 0 = Sunday.
+  const days = Math.floor(dateMs(value) / DAY_MS);
+  const weekday = (((days + 4) % 7) + 7) % 7;
+  return weekday !== 0 && !holidaySet(calendar).has(value);
 }
 export function nextWorkingDate(value: string, calendar: Calendar): string {
   let date = value;
