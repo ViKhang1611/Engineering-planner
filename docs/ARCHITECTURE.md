@@ -55,6 +55,17 @@ Trạng thái lưu dùng sequence để một giao dịch cũ hoàn thành khôn
 - S-Curve tối đa 101 mẫu; warning table phân trang 50 dòng.
 - ExcelJS import động. Không tải thư viện Excel trong bundle giao diện chính.
 - Engine chạy đồng bộ để giữ commit nguyên tử. Benchmark có số đo 5.000 tasks, nhưng không thay thế profiling trên máy người dùng hoặc SLA 60fps.
+- App shell tách thành các component nhỏ, mỗi phần chỉ theo dõi đúng trường store nó hiển thị (`useShallow`, `store/shellSelectors.ts`); chọn dòng hay gõ phím không render lại shell.
+
+### Module Lập tiến độ (`modules/schedule/components`)
+
+`ScheduleWorkspace` giữ state hiển thị (zoom, lọc, cuộn, hộp thoại) và nối session với các phần đã memo:
+
+- `TaskRow` (memo): một dòng WBS + làn Gantt; chỉ render lại khi task, trạng thái chọn, độ lệch kéo hoặc thang thời gian của chính nó đổi. Callback dùng chung một đối tượng `RowActions` ổn định, đọc dữ liệu mới nhất qua ref.
+- `hoverStore`: dòng đang hover nằm ngoài state React; mỗi dòng đăng ký "mình có đang được hover", nên di chuột chỉ render lại dòng rời và dòng vào.
+- Độ rộng bảng WBS và độ lệch cuộn ngang là biến CSS (`--pane`, `--grid-x`, `--timeline-x`) đặt trên `.workspace`; cuộn ngang hay kéo thanh chia không render lại các dòng.
+- `TimelineParts` (header, nền ngày), `DependencyLayer` (đường nối SVG), `ScheduleChrome` (heading, ribbon, thanh trạng thái), `ScheduleDialogs` (mỗi hộp thoại tự giữ state form), `useGanttDrag` (kéo/đổi thời lượng thành đề xuất chờ xác nhận), `scheduleShared` (cột, định dạng, `barPosition`).
+- Ô dùng ở mọi dòng (`InlineCell`, `PredecessorCell`) chỉ lấy action ổn định từ store, không theo dõi cả session.
 
 ## Hợp đồng nhập/xuất
 

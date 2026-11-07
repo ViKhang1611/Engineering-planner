@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useProjectStore } from "../../store/useProjectStore";
+import { workspaceStore } from "../../store/workspaceStore";
 import { setPredecessors } from "../../domain/predecessors";
 import type { ScheduledTask } from "../../domain/project";
 export function PredecessorCell({
@@ -9,7 +10,10 @@ export function PredecessorCell({
   task: ScheduledTask;
   value: string;
 }) {
-  const state = useProjectStore(),
+  // Only the stable commit action: this cell renders on every visible row, so
+  // subscribing to the whole session would re-render all of them on any
+  // selection change. Current tasks are read at save time instead.
+  const commit = useProjectStore((s) => s.commit),
     [editing, setEditing] = useState(false),
     [draft, setDraft] = useState(value);
   if (!editing)
@@ -35,9 +39,11 @@ export function PredecessorCell({
       </span>
     );
   const save = () => {
+    const { projects, activeProjectId } = workspaceStore.getState();
+    const tasks = projects[activeProjectId].result.tasks;
     if (
-      state.commit(
-        (p) => setPredecessors(p, state.result.tasks, task.id, draft),
+      commit(
+        (p) => setPredecessors(p, tasks, task.id, draft),
         "Đã cập nhật tiền nhiệm",
       )
     )
