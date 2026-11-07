@@ -100,8 +100,8 @@ export function LinkDialog({
         </div>
         <p className="info-box">
           Lag dương tạo độ trễ; lag âm cho phép đi trước. Công việc sau được
-          tính theo tất cả tiền nhiệm. Ctrl/Cmd+click chọn hai dòng trước khi
-          mở hộp thoại.
+          tính theo tất cả tiền nhiệm. Ctrl/Cmd+click chọn hai dòng trước khi mở
+          hộp thoại.
         </p>
         <button type="submit" className="primary-button w-full">
           <Link2 size={15} />
@@ -266,9 +266,9 @@ export function HelpDialog({ close }: { close: () => void }) {
     <Modal title="Thao tác với ForgePlan" close={close}>
       <div className="space-y-3 text-slate-600 leading-6">
         <p>
-          <strong>Chỉnh dữ liệu:</strong> nhấp đúp tên, thời lượng, ngày bắt
-          đầu hoặc Physical %. Enter lưu, Escape hủy. Nhấp đúp dòng để mở bảng
-          chi tiết.
+          <strong>Chỉnh dữ liệu:</strong> nhấp đúp tên, thời lượng, ngày bắt đầu
+          hoặc Physical %. Enter lưu, Escape hủy. Nhấp đúp dòng để mở bảng chi
+          tiết.
         </p>
         <p>
           <strong>Gantt:</strong> kéo thanh để đề xuất ngày bắt đầu; kéo mép

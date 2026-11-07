@@ -47,8 +47,12 @@ export const ScheduleHeading = memo(function ScheduleHeading({
   return (
     <section className="project-heading">
       <div className="min-w-0">
-        <div className="eyebrow mb-1">KẾ HOẠCH TRIỂN KHAI · PHÒNG TỰ ĐỘNG HÓA</div>
-        <h2 className="text-xl font-semibold tracking-tight truncate">{name}</h2>
+        <div className="eyebrow mb-1">
+          KẾ HOẠCH TRIỂN KHAI · PHÒNG TỰ ĐỘNG HÓA
+        </div>
+        <h2 className="text-xl font-semibold tracking-tight truncate">
+          {name}
+        </h2>
         <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
           <span className="flex items-center gap-1">
             <CalendarDays size={13} />

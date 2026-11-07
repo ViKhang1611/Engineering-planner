@@ -255,7 +255,9 @@ function StorageStatus() {
     })),
   );
   return (
-    <span className={`storage-state ${persistenceError ? "storage-error" : ""}`}>
+    <span
+      className={`storage-state ${persistenceError ? "storage-error" : ""}`}
+    >
       <ShieldCheck size={14} />
       {persistenceError
         ? "Chưa lưu được"

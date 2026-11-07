@@ -162,7 +162,9 @@ svg.lucide {
   font-size: 12px;
   font-weight: 500;
   flex-shrink: 0;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 .tool:hover:not(:disabled) {
   background: var(--glass-panel-bg, var(--color-slate-100));

@@ -1,0 +1,12 @@
+# Store and check out text files with LF on every OS (the repo is LF already);
+# stops Windows autocrlf from converting on checkout.
+* text=auto eol=lf
+*.bat text eol=crlf
+
+# Binary assets
+*.ttf binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.xlsx binary
+*.png binary

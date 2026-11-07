@@ -8,7 +8,6 @@ export const selectActiveProject = (state: WorkspaceState) =>
 /** Derived, never persisted: modules must not maintain their own task copies. */
 export function projectSummary(session: ScheduleSession) {
   const leaves = session.result.tasks.filter((task) => !task.isSummary);
-  const total = leaves.reduce((sum, task) => sum + task.duration, 0);
   return {
     leafCount: leaves.length,
     physicalPct: overallProgress(session.result.tasks),

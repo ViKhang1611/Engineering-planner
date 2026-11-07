@@ -587,10 +587,32 @@ fieldset:disabled {
     animation: none;
   }
 }
-.kanban-card progress { appearance:none; border:0; border-radius:3px; overflow:hidden; }
-.kanban-card progress::-webkit-progress-bar { background:var(--color-slate-200); }
-.kanban-card progress::-webkit-progress-value { background:var(--accent); }
-.done .kanban-card progress::-webkit-progress-value { background:var(--planner-success); }
-.kanban-card progress::-moz-progress-bar { background:var(--accent); }
-input[type=date],input[type=number],.card-meta { font-family:'JetBrains Mono',monospace; font-variant-numeric:tabular-nums; font-size:12px; }
-button:disabled { cursor:default; opacity:.55; }
+.kanban-card progress {
+  appearance: none;
+  border: 0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.kanban-card progress::-webkit-progress-bar {
+  background: var(--color-slate-200);
+}
+.kanban-card progress::-webkit-progress-value {
+  background: var(--accent);
+}
+.done .kanban-card progress::-webkit-progress-value {
+  background: var(--planner-success);
+}
+.kanban-card progress::-moz-progress-bar {
+  background: var(--accent);
+}
+input[type="date"],
+input[type="number"],
+.card-meta {
+  font-family: "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}

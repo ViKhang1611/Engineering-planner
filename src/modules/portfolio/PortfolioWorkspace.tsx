@@ -158,7 +158,9 @@ export function PortfolioWorkspace() {
             return (
               <div key={p.id} className="creative-app-card">
                 <div className="creative-card-top">
-                  <span className={`kpi-app-badge ${tones[idx % tones.length]}`}>
+                  <span
+                    className={`kpi-app-badge ${tones[idx % tones.length]}`}
+                  >
                     {code}
                   </span>
                   <strong>{p.name}</strong>

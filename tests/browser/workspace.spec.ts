@@ -197,7 +197,9 @@ test("an edit in one tab appears in another open tab without reload", async ({
   await expect(
     other.locator('[data-task-id="drawing"] .grid-cell').nth(2),
   ).toHaveText("11d");
-  await expect(other.getByRole("status").filter({ hasText: "tab khác" })).toBeVisible();
+  await expect(
+    other.getByRole("status").filter({ hasText: "tab khác" }),
+  ).toBeVisible();
   // The other tab can keep editing: its next save is not a conflict.
   await other.locator('[data-task-id="survey"] .grid-cell').nth(2).dblclick();
   const otherInput = other.getByRole("spinbutton", { name: /Sửa duration/ });

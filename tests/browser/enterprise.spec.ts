@@ -134,14 +134,12 @@ test("Kanban drag changes shared progress and spreadsheet round-trip works in br
   const downloadEvent = page.waitForEvent("download");
   await page.getByRole("button", { name: "Excel .xlsx", exact: true }).click();
   const download = await downloadEvent;
-  await page
-    .locator('input[accept=".json,.csv,.xlsx"]')
-    .setInputFiles({
-      name: download.suggestedFilename(),
-      mimeType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      buffer: await readFile((await download.path())!),
-    });
+  await page.locator('input[accept=".json,.csv,.xlsx"]').setInputFiles({
+    name: download.suggestedFilename(),
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer: await readFile((await download.path())!),
+  });
   await expect(
     page.getByRole("dialog", { name: "Xác nhận nhập dự án" }),
   ).toBeVisible();
@@ -176,7 +174,9 @@ test("attachments live outside the workspace document and survive reload, export
     mimeType: "text/plain",
     buffer: Buffer.from(content),
   });
-  await expect(page.getByRole("button", { name: "fat.txt", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "fat.txt", exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Lưu thay đổi" }).click();
   await expect(page.locator(".storage-state")).toContainText("Đã lưu");
   const stored = await readStored(page);

@@ -149,7 +149,9 @@ describe("IndexedDB per-project records", () => {
       indexedDB: factory,
       localStorage: {
         getItem: (key: string) =>
-          key === "forgeplan.workspace.v2" && seed ? JSON.stringify(seed) : null,
+          key === "forgeplan.workspace.v2" && seed
+            ? JSON.stringify(seed)
+            : null,
       },
     });
     const repo = await import(
@@ -181,9 +183,11 @@ describe("IndexedDB per-project records", () => {
     const doc = documentOf("Một", "Hai", "Ba");
     const repo = await boot(factory, doc);
     await repo.saveIndexedWorkspace(doc);
-    expect(
-      await raw(factory, "projects", (s) => s.getAllKeys()),
-    ).toEqual(["p1", "p2", "p3"]);
+    expect(await raw(factory, "projects", (s) => s.getAllKeys())).toEqual([
+      "p1",
+      "p2",
+      "p3",
+    ]);
 
     // A sentinel on disk proves p1 is not rewritten by a p2-only save.
     const p1 = (await raw(factory, "projects", (s) => s.get("p1"))) as {
@@ -203,9 +207,10 @@ describe("IndexedDB per-project records", () => {
       "sentinel",
       "Hai (sửa)",
     ]);
-    expect(
-      await raw(factory, "projects", (s) => s.getAllKeys()),
-    ).toEqual(["p1", "p2"]);
+    expect(await raw(factory, "projects", (s) => s.getAllKeys())).toEqual([
+      "p1",
+      "p2",
+    ]);
   });
 
   it("migrates a v2 single-document record and continues its revision", async () => {
@@ -239,9 +244,11 @@ describe("IndexedDB per-project records", () => {
       await raw(factory, "workspace", (s) => s.get("current")),
     ).toBeUndefined();
     expect(
-      ((await raw(factory, "workspace", (s) => s.get("meta"))) as {
-        revision: number;
-      }).revision,
+      (
+        (await raw(factory, "workspace", (s) => s.get("meta"))) as {
+          revision: number;
+        }
+      ).revision,
     ).toBe(8);
     expect(await raw(factory, "projects", (s) => s.getAllKeys())).toEqual([
       "p1",

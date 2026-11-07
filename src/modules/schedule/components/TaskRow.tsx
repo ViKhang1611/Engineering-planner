@@ -112,7 +112,9 @@ export const TaskRow = memo(function TaskRow({
         if (
           !event.ctrlKey &&
           !event.metaKey &&
-          (event.target as HTMLElement).closest('[data-column="wbs"],.tree-name')
+          (event.target as HTMLElement).closest(
+            '[data-column="wbs"],.tree-name',
+          )
         )
           actions.openEditor(task.id);
       }}
@@ -268,9 +270,7 @@ export const TaskRow = memo(function TaskRow({
           className="relative h-full"
           style={{ width: timelineWidth, transform: timelineShift }}
         >
-          {compare && base && (
-            <BaselineBar base={base} geometry={geometry} />
-          )}
+          {compare && base && <BaselineBar base={base} geometry={geometry} />}
           {task.isSummary ? (
             <div
               className="summary-bar"

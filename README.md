@@ -60,6 +60,8 @@ npm run preview
 ## Kiểm tra
 
 ```sh
+npm run check          # typecheck + ESLint + Prettier + unit test (CI chạy lệnh tương tự)
+npm run format         # tự định dạng mã nguồn
 npm test
 npx playwright install chromium --only-shell
 npm run test:e2e -- --workers=1

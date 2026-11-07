@@ -2,6 +2,6 @@ node_modules/
 dist/
 test-results/
 playwright-report/
-.venv/
-node_modules/
 *.tsbuildinfo
+# Local Python virtualenv (not part of the app)
+.venv/

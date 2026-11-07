@@ -2,7 +2,6 @@ import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import type { ExportJob, Progress } from "./model";
 import {
-  headings,
   planRange,
   planRows,
   timelineColumns,
@@ -267,7 +266,7 @@ export async function exportPlanPdf(
       muted,
     );
   }
-  for (const [groupIndex, group] of groups.entries())
+  for (const group of groups)
     for (const [windowIndex, win] of windows.entries()) {
       const page = doc.addPage([width, height]),
         lo = win[0].offset,

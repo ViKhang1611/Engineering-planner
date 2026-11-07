@@ -371,7 +371,7 @@ export function ScheduleWorkspace() {
     }),
     // startDrag only closes over stable state setters; everything that
     // changes per render is read from latestRef.
-    [session],
+    [session, startDrag],
   );
 
   const changePane = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -589,7 +589,9 @@ export function ScheduleWorkspace() {
               geometry={geometry}
               firstIndex={virtualRows.length ? virtualRows[0].index : -1}
               lastIndex={
-                virtualRows.length ? virtualRows[virtualRows.length - 1].index : -1
+                virtualRows.length
+                  ? virtualRows[virtualRows.length - 1].index
+                  : -1
               }
               showCritical={critical}
               timelineWidth={timelineWidth}

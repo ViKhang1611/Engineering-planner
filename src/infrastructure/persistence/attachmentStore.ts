@@ -67,7 +67,10 @@ export async function putAttachments(
 export async function getAttachmentBlob(id: string): Promise<Blob | undefined> {
   if (!database) return undefined;
   const record = (await request(
-    database.transaction(ATTACHMENT_STORE).objectStore(ATTACHMENT_STORE).get(id),
+    database
+      .transaction(ATTACHMENT_STORE)
+      .objectStore(ATTACHMENT_STORE)
+      .get(id),
   )) as AttachmentRecord | undefined;
   return record ? new Blob([record.bytes], { type: record.type }) : undefined;
 }
@@ -181,7 +184,10 @@ export async function externalizeAttachments<T>(project: T): Promise<T> {
   const copy = structuredClone(project);
   const pending: { attachment: Attachment; blob: Blob }[] = [];
   forEachAttachment(copy, (attachment) => {
-    if (typeof attachment.data !== "string" || typeof attachment.id !== "string")
+    if (
+      typeof attachment.data !== "string" ||
+      typeof attachment.id !== "string"
+    )
       return;
     const blob = dataUrlToBlob(attachment.data);
     if (blob && blob.size === attachment.size)

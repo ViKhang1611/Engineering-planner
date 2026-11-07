@@ -40,7 +40,8 @@ function median(run: () => void, n = 15) {
 
 const steps = {
   structuredClone: median(() => structuredClone(base)),
-  normalizeExecution: median(() => normalizeExecution(structuredClone(base))) -
+  normalizeExecution:
+    median(() => normalizeExecution(structuredClone(base))) -
     median(() => structuredClone(base)),
   validateExtensions: median(() => validateExtensions(base)),
   scheduleProject: median(() => scheduleProject(base)),

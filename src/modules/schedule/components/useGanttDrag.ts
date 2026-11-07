@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   addCalendarDays,
   nextWorkingDate,
@@ -23,7 +23,9 @@ export function useGanttDrag() {
   } | null>(null);
   const [proposal, setProposal] = useState<ScheduleProposal | null>(null);
 
-  function startDrag(
+  // Stable identity: only state setters are captured, so memoized rows can
+  // receive it through one RowActions object.
+  const startDrag = useCallback(function startDrag(
     event: React.PointerEvent,
     task: ScheduledTask,
     mode: DragMode,
@@ -84,7 +86,7 @@ export function useGanttDrag() {
     node.addEventListener("pointermove", move);
     node.addEventListener("pointerup", up);
     node.addEventListener("pointercancel", cleanup);
-  }
+  }, []);
 
   return { drag, startDrag, proposal, setProposal };
 }

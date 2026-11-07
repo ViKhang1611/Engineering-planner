@@ -79,8 +79,7 @@ export const wallpapers: WallpaperPreset[] = [
     preview: "linear-gradient(135deg, #cbd5e1 0%, #e2e8f0 50%, #f8fafc 100%)",
     lightBg:
       "radial-gradient(circle at 15% 15%, #dbeafe 0%, transparent 50%), radial-gradient(circle at 85% 85%, #fae8ff 0%, transparent 50%), linear-gradient(135deg, #e2e8f0 0%, #f1f5f9 50%, #e0e7ff 100%)",
-    darkBg:
-      "linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e293b 100%)",
+    darkBg: "linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e293b 100%)",
     bannerGradient:
       "linear-gradient(112deg, #2563eb 0%, #7c3aed 50%, #db2777 100%)",
   },

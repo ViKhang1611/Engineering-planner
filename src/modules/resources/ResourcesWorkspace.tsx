@@ -141,9 +141,8 @@ export function ResourcesWorkspace() {
                           onClick={() =>
                             setExpanded((old) => {
                               const next = new Set(old);
-                              next.has(r.id)
-                                ? next.delete(r.id)
-                                : next.add(r.id);
+                              if (next.has(r.id)) next.delete(r.id);
+                              else next.add(r.id);
                               return next;
                             })
                           }

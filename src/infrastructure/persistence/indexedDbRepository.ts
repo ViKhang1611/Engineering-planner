@@ -1,4 +1,7 @@
-import type { ProjectSnapshot, WorkspaceDocument } from "../../domain/workspace";
+import type {
+  ProjectSnapshot,
+  WorkspaceDocument,
+} from "../../domain/workspace";
 import { LocalStorageWorkspaceRepository } from "./workspaceRepository";
 import {
   ATTACHMENT_STORE,
@@ -171,8 +174,7 @@ export function hasIndexedDatabase() {
  */
 function enqueue<T>(run: () => Promise<T>): Promise<T> {
   inFlight++;
-  const start =
-    inFlight === 1 ? run() : queue.catch(() => {}).then(run);
+  const start = inFlight === 1 ? run() : queue.catch(() => {}).then(run);
   const operation = start.finally(() => {
     inFlight--;
   });

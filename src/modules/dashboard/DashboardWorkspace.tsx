@@ -17,7 +17,10 @@ export function DashboardWorkspace() {
     [editor, setEditor] = useState<string | null>(null),
     [threshold, setThreshold] = useState(20),
     [warningPage, setWarningPage] = useState(0);
-  const leaves = result.tasks.filter((t) => !t.isSummary),
+  const leaves = useMemo(
+      () => result.tasks.filter((t) => !t.isSummary),
+      [result],
+    ),
     task = result.tasks.find((t) => t.id === editor),
     evm = earnedValue(project, result);
   const overloaded = new Set(
@@ -127,7 +130,7 @@ export function DashboardWorkspace() {
       observations,
       range,
     };
-  }, [project, result, state.baseline]);
+  }, [project, result, leaves, state.baseline]);
   return (
     <div className="enterprise-module dashboard">
       <div className="module-toolbar">
@@ -182,7 +185,12 @@ export function DashboardWorkspace() {
             "kpi-tile-rose",
           ],
           ["Rs", "Kỹ sư quá tải", overloaded.size, "kpi-tile-amber"],
-          ["Ms", "Mốc sắp tới · 14 ngày", milestones.length, "kpi-tile-emerald"],
+          [
+            "Ms",
+            "Mốc sắp tới · 14 ngày",
+            milestones.length,
+            "kpi-tile-emerald",
+          ],
         ].map(([code, label, value, tone]) => (
           <div key={label} className="kpi">
             <div className="kpi-head">
@@ -202,8 +210,12 @@ export function DashboardWorkspace() {
             <span style={{ color: "var(--planner-baseline)" }}>
               ● {state.baseline?.name ?? "Chưa chốt baseline"}
             </span>
-            <span style={{ color: "var(--planner-task)" }}>● Kế hoạch hiện tại</span>
-            <span style={{ color: "var(--planner-success)" }}>● Physical thực tế</span>
+            <span style={{ color: "var(--planner-task)" }}>
+              ● Kế hoạch hiện tại
+            </span>
+            <span style={{ color: "var(--planner-success)" }}>
+              ● Physical thực tế
+            </span>
           </div>
         </div>
         <svg
@@ -238,7 +250,12 @@ export function DashboardWorkspace() {
             strokeWidth="3"
             fill="none"
           />
-          <path d={curve.actual} stroke="var(--planner-success)" strokeWidth="3" fill="none" />
+          <path
+            d={curve.actual}
+            stroke="var(--planner-success)"
+            strokeWidth="3"
+            fill="none"
+          />
           {curve.observations.map((p) => (
             <circle
               key={p.date}

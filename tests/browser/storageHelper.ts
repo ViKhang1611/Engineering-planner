@@ -15,7 +15,7 @@ export async function readStored(page: Page) {
             const byId = new Map(
               projects.result.map((r: any) => [r.project.id, r]),
             );
-            const { revision, projectOrder, ...rest } = meta.result;
+            const { revision: _revision, projectOrder, ...rest } = meta.result;
             resolve({
               ...rest,
               projects: projectOrder.map((id: string) => byId.get(id)),

@@ -11,8 +11,9 @@ const size = Buffer.byteLength(text);
 
 function projectWithAttachment(data?: string): ProjectInput {
   const project = createSeed();
-  project.tasks.find((t) => !project.tasks.some((c) => c.parentId === t.id))!
-    .attachments = [
+  project.tasks.find(
+    (t) => !project.tasks.some((c) => c.parentId === t.id),
+  )!.attachments = [
     { id: "att-1", name: "fat.txt", type: "text/plain", size, data },
   ];
   return project;
@@ -29,7 +30,10 @@ function documentOf(project: ProjectInput): WorkspaceDocument {
 }
 
 /** Fresh fake IndexedDB plus fresh module instances, seeded via legacy localStorage. */
-async function boot(seed: WorkspaceDocument | null, factory = new IDBFactory()) {
+async function boot(
+  seed: WorkspaceDocument | null,
+  factory = new IDBFactory(),
+) {
   vi.resetModules();
   vi.stubGlobal("indexedDB", factory);
   vi.stubGlobal("window", {
@@ -77,7 +81,9 @@ describe("attachment store", () => {
     const project = projectWithAttachment(dataUrl);
     project.tasks.flatMap((t) => t.attachments ?? [])[0].size = size + 1;
     const { repo, store } = await boot(documentOf(project));
-    const meta = firstAttachment(repo.loadIndexedWorkspace() as WorkspaceDocument);
+    const meta = firstAttachment(
+      repo.loadIndexedWorkspace() as WorkspaceDocument,
+    );
     expect(meta.data).toBe(dataUrl);
     expect(await store.getAttachmentBlob("att-1")).toBeUndefined();
   });

@@ -391,7 +391,11 @@ export function createWorkspaceStore(
       const previous = projects[id];
       const next = makeSession(item);
       projects[id] = previous
-        ? { ...next, selected: previous.selected, collapsed: previous.collapsed }
+        ? {
+            ...next,
+            selected: previous.selected,
+            collapsed: previous.collapsed,
+          }
         : next;
       updated++;
     }

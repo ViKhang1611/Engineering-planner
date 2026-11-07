@@ -10,9 +10,15 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"tests/**/*.ts\" \"scripts/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"tests/**/*.ts\" \"scripts/**/*.ts\"",
     "test": "vitest run",
+    "test:e2e": "playwright test",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
     "benchmark": "node --import tsx scripts/benchmark.ts",
-    "test:e2e": "playwright test"
+    "profile:commit": "node --import tsx scripts/commit-profile.ts"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
@@ -28,17 +34,22 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@playwright/test": "1.55.1",
     "@tailwindcss/vite": "^4.1.13",
     "@types/node": "^22.18.6",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.3",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
     "fake-indexeddb": "^6.2.4",
+    "globals": "^15.15.0",
     "prettier": "3.6.2",
     "tailwindcss": "^4.1.13",
     "tsx": "^4.20.5",
     "typescript": "~5.9.2",
+    "typescript-eslint": "^8.72.1",
     "vite": "^7.1.7",
     "vitest": "^3.2.4"
   }
