@@ -1,6 +1,23 @@
 import { layout } from "../../../shared/designTokens";
 import { calendarDaysBetween } from "../engine/schedulingEngine";
 
+/**
+ * Fraction (0–1) of a working day elapsed at an ISO "…THH:MM" timestamp, for
+ * two 4-hour blocks starting at `shift.morning` / `shift.afternoon` minutes.
+ */
+export function dayFraction(
+  at: string | undefined,
+  shift: { morning: number; afternoon: number },
+) {
+  if (!at) return 0;
+  const minutes = Number(at.slice(11, 13)) * 60 + Number(at.slice(14, 16));
+  const worked =
+    minutes < shift.afternoon
+      ? minutes - shift.morning
+      : minutes - shift.afternoon + 240;
+  return Math.max(0, Math.min(1, worked / 480));
+}
+
 export const ROW = layout.rowHeight;
 export const HEADER = layout.timelineHeaderHeight;
 
@@ -31,6 +48,8 @@ export const dayWidthFor = (zoom: Zoom) =>
 export interface TimelineGeometry {
   start: string;
   dayWidth: number;
+  /** Work block starts in minutes of day (see shiftMinutes). */
+  shift: { morning: number; afternoon: number };
 }
 
 /** Horizontal placement of a bar on the timeline, in px. */
@@ -42,17 +61,9 @@ export function barPosition(
     startAt?: string;
     finishAt?: string;
   },
-  { start, dayWidth }: TimelineGeometry,
+  { start, dayWidth, shift }: TimelineGeometry,
 ) {
-  const fraction = (at?: string) => {
-    if (!at) return 0;
-    const hours = Number(at.slice(11, 13)),
-      minutes = Number(at.slice(14, 16));
-    return Math.max(
-      0,
-      Math.min(1, (hours * 60 + minutes - 480 - (hours >= 13 ? 60 : 0)) / 480),
-    );
-  };
+  const fraction = (at?: string) => dayFraction(at, shift);
   const x =
     calendarDaysBetween(start, task.startDate) * dayWidth +
     fraction(task.startAt) * dayWidth;

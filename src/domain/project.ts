@@ -1,6 +1,15 @@
 export type DependencyType = "FS" | "SS" | "FF" | "SF";
 export interface Calendar {
   holidays: string[];
+  /** Working weekdays, 0 = Sunday … 6 = Saturday. Default Monday–Saturday. */
+  workWeek?: number[];
+  /** Dates worked although their weekday is off (ngày làm bù). Holidays win. */
+  extraWorkingDays?: string[];
+  /**
+   * Start of the two 4-hour blocks, "HH:MM". Default 08:00 and 13:00.
+   * A working day is always 480 minutes, so durations in days are unchanged.
+   */
+  shift?: { morningStart: string; afternoonStart: string };
 }
 export interface Assignment {
   resourceId: string;

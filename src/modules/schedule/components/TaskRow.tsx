@@ -8,7 +8,12 @@ import {
 } from "lucide-react";
 import { variance } from "../../../domain/execution";
 import { PredecessorCell } from "../../../shared/ui/PredecessorCell";
-import type { BaselineTask, Resource, ScheduledTask } from "../engine/types";
+import type {
+  BaselineTask,
+  Calendar,
+  Resource,
+  ScheduledTask,
+} from "../engine/types";
 import { InlineCell } from "./InlineCell";
 import { useIsHovered, type HoverStore } from "./hoverStore";
 import {
@@ -50,7 +55,7 @@ export interface TaskRowProps {
   showCritical: boolean;
   compare: boolean;
   base: BaselineTask | undefined;
-  varianceHolidays: string[];
+  varianceCalendar: Calendar;
   predecessors: string;
   resourceById: Map<string, Resource>;
   peaks: Map<string, number>;
@@ -77,7 +82,7 @@ export const TaskRow = memo(function TaskRow({
   showCritical,
   compare,
   base,
-  varianceHolidays,
+  varianceCalendar,
   predecessors,
   resourceById,
   peaks,
@@ -201,7 +206,7 @@ export const TaskRow = memo(function TaskRow({
               {column.key === "variance" && (
                 <span className="numeric">
                   {base
-                    ? variance(task.endDate, base.endDate, varianceHolidays)
+                    ? variance(task.endDate, base.endDate, varianceCalendar)
                     : "—"}
                 </span>
               )}

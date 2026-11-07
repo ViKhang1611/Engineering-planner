@@ -187,3 +187,26 @@ test("duplicates and deletes projects from the portfolio, surviving reload", asy
   await page.reload();
   await expect(page.locator(".enterprise-table tbody tr")).toHaveCount(1);
 });
+
+test("work week and shift times flow into the schedule and shell", async ({
+  page,
+}) => {
+  await page
+    .getByRole("button", { name: "Thiết lập dự án", exact: true })
+    .click();
+  await page.getByLabel("Làm việc T7").uncheck();
+  await page.getByLabel("Ca sáng bắt đầu").fill("07:30");
+  await page.getByLabel("Ca chiều bắt đầu").fill("12:30");
+  await expect(page.locator(".calendar-fields .field-hint")).toContainText(
+    "T2–T6 · 07:30–11:30 / 12:30–16:30",
+  );
+  await page.getByRole("button", { name: "Lưu thông tin dự án" }).click();
+  await expect(page.getByRole("status")).toContainText("Đã lưu");
+  await expect(page.locator(".shell-calendar")).toContainText("T2–T6");
+  await page.getByRole("button", { name: "Lập tiến độ", exact: true }).click();
+  await expect(page.locator(".project-heading")).toContainText(
+    "T2–T6 · 07:30–11:30 / 12:30–16:30",
+  );
+  await page.reload();
+  await expect(page.locator(".shell-calendar")).toContainText("T2–T6");
+});

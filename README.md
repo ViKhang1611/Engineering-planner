@@ -46,7 +46,7 @@ npm run preview
 
 ## Quy ước cần biết
 
-1. Lịch T2–T7, 08:00–12:00 và 13:00–17:00, nghỉ Chủ Nhật và ngày lễ cấu hình. Một ngày = 480 phút làm việc. Mốc thời gian engine dùng +07:00.
+1. Lịch mặc định T2–T7, 08:00–12:00 và 13:00–17:00, nghỉ Chủ Nhật và ngày lễ. Ở Thiết lập dự án (hoặc Lập tiến độ › Thiết lập lịch) có thể chọn ngày làm việc trong tuần, ngày làm bù và giờ bắt đầu hai ca. Mỗi ngày luôn gồm hai ca 4 giờ (480 phút làm việc). Mốc thời gian engine dùng +07:00. Chưa hỗ trợ lịch riêng theo nguồn lực.
 2. Duration % là thời lượng kế hoạch đã trôi qua đến **ngày báo cáo**, không phải Actual Duration / Remaining Duration. Thay ngày báo cáo ở Thiết lập dự án.
 3. Physical % summary dùng trọng số khối lượng cố định. Khi dữ liệu cũ chưa có trọng số, khởi tạo bằng `max(duration, 1)` một lần. Sửa thời lượng không âm thầm đổi trọng số. Có thể sửa trọng số trong Drawer.
 4. Checklist tính `tổng trọng số đã xong / tổng trọng số`. Khi ở chế độ checklist, Physical không sửa trực tiếp ở grid. Checklist rỗng = 0%. Task FAT/SAT đạt 100% nhưng chưa nghiệm thu nằm ở cột Chờ nghiệm thu.

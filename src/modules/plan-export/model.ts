@@ -1,4 +1,5 @@
 import type {
+  Calendar,
   ProjectInput,
   ScheduleResult,
   Baseline,
@@ -8,6 +9,7 @@ import type { ThemePreset } from "../../theme/themes";
 import {
   addCalendarDays,
   calendarDaysBetween,
+  shiftMinutes,
 } from "../schedule/engine/schedulingEngine";
 import { variance } from "../../domain/execution";
 export type Scale = "day" | "week" | "month";
@@ -80,13 +82,18 @@ export function timelineColumns(
   }
   return columns;
 }
-export function timePosition(at: string, start: string) {
+/** Day offset from `start` plus the worked fraction of that day. */
+export function timePosition(
+  at: string,
+  start: string,
+  calendar: Pick<Calendar, "shift"> = {},
+) {
+  const { morning, afternoon } = shiftMinutes(calendar);
   const match = at.match(/T(\d\d):(\d\d)/);
-  const minutes = match ? Number(match[1]) * 60 + Number(match[2]) : 480;
-  const fraction = Math.max(
-    0,
-    Math.min(1, (minutes - 480 - (minutes >= 780 ? 60 : 0)) / 480),
-  );
+  const minutes = match ? Number(match[1]) * 60 + Number(match[2]) : morning;
+  const worked =
+    minutes < afternoon ? minutes - morning : minutes - afternoon + 240;
+  const fraction = Math.max(0, Math.min(1, worked / 480));
   return calendarDaysBetween(start, at.slice(0, 10)) + fraction;
 }
 export function planRows(s: PlanSnapshot) {
@@ -117,7 +124,7 @@ export function planRows(s: PlanSnapshot) {
         ? variance(
             task.endDate,
             baseline.get(task.id)!.endDate,
-            s.baseline?.calendar?.holidays ?? s.project.calendar.holidays,
+            s.baseline?.calendar ?? s.project.calendar,
           )
         : null,
       task.assignments

@@ -1,5 +1,11 @@
-import { parseDate } from "../modules/schedule/engine/schedulingEngine";
+import {
+  addCalendarDays,
+  isWorkingDay,
+  parseDate,
+  validateCalendar,
+} from "../modules/schedule/engine/schedulingEngine";
 import type {
+  Calendar,
   ExecutionRules,
   ProjectInput,
   ScheduledTask,
@@ -213,7 +219,7 @@ export function validateExtensions(p: ProjectInput) {
       new Set(b.tasks.map((t) => t.id)).size !== b.tasks.length
     )
       throw new Error("Baseline không hợp lệ");
-    b.calendar?.holidays.forEach(parseDate);
+    if (b.calendar) validateCalendar(b.calendar);
     for (const t of b.tasks) {
       parseDate(t.startDate);
       parseDate(t.endDate);
@@ -252,9 +258,13 @@ export function validateExtensions(p: ProjectInput) {
   )
     throw new Error("Trùng mã baseline");
 }
-export function variance(end: string, baselineEnd: string, holidays: string[]) {
-  let from = new Date(`${baselineEnd}T00:00:00Z`),
-    to = new Date(`${end}T00:00:00Z`),
+/**
+ * Finish variance in working days of `calendar` (the baseline's calendar when
+ * it has one): positive when `end` is later than `baselineEnd`.
+ */
+export function variance(end: string, baselineEnd: string, calendar: Calendar) {
+  let from = baselineEnd,
+    to = end,
     sign = 1;
   if (from > to) {
     [from, to] = [to, from];
@@ -262,12 +272,8 @@ export function variance(end: string, baselineEnd: string, holidays: string[]) {
   }
   let days = 0;
   while (from < to) {
-    from.setUTCDate(from.getUTCDate() + 1);
-    if (
-      from.getUTCDay() !== 0 &&
-      !holidays.includes(from.toISOString().slice(0, 10))
-    )
-      days++;
+    from = addCalendarDays(from, 1);
+    if (isWorkingDay(from, calendar)) days++;
   }
   return sign * days;
 }

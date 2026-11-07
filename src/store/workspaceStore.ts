@@ -16,6 +16,7 @@ import { createSeed } from "../modules/schedule/data/seed";
 import {
   parseDate,
   scheduleProject,
+  validateCalendar,
 } from "../modules/schedule/engine/schedulingEngine";
 import {
   browserRepository,
@@ -77,12 +78,14 @@ function validatedSettings(input: ProjectSettingsInput): ProjectSettingsInput {
   parseDate(input.startDate);
   parseDate(input.statusDate);
   input.holidays.forEach(parseDate);
+  validateCalendar({ holidays: input.holidays, ...input.calendar });
   return {
     ...input,
     name,
     contractCode: input.contractCode.trim(),
     client: input.client.trim(),
     holidays: [...new Set(input.holidays)].sort(),
+    calendar: input.calendar ?? {},
   };
 }
 
@@ -287,11 +290,11 @@ export function createWorkspaceStore(
         try {
           const fields = validatedSettings(input);
           const id = crypto.randomUUID();
-          const { holidays, ...metadata } = fields;
+          const { holidays, calendar, ...metadata } = fields;
           const project = {
             ...metadata,
             id,
-            calendar: { holidays },
+            calendar: { ...calendar, holidays },
             tasks: [],
             dependencies: [],
             resources: [],
@@ -315,12 +318,12 @@ export function createWorkspaceStore(
       },
       updateSettings: (id, input) => {
         try {
-          const { holidays, ...metadata } = validatedSettings(input);
+          const { holidays, calendar, ...metadata } = validatedSettings(input);
           const target = get().projects[id];
           if (!target) throw new Error("Dự án không tồn tại.");
           const ok = target.commit((project) => {
             Object.assign(project, metadata);
-            project.calendar = { holidays };
+            project.calendar = { ...calendar, holidays };
           }, "Đã lưu thông tin dự án và tính lại lịch");
           set({ actionError: ok ? "" : get().projects[id].error });
           return ok;

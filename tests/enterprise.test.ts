@@ -107,8 +107,18 @@ describe("Enterprise integrated domain", () => {
     expect(s().project).toBe(before);
   });
   it("counts variance across Sundays and holidays", () => {
-    expect(variance("2026-10-13", "2026-10-10", ["2026-10-12"])).toBe(1);
-    expect(variance("2026-10-10", "2026-10-13", ["2026-10-12"])).toBe(-1);
+    const calendar = { holidays: ["2026-10-12"] };
+    expect(variance("2026-10-13", "2026-10-10", calendar)).toBe(1);
+    expect(variance("2026-10-10", "2026-10-13", calendar)).toBe(-1);
+  });
+  it("counts variance on the configured work week and makeup days", () => {
+    // Mon–Fri week: Sat 10/10 and Sun 10/11 are off; 10/10 is a makeup day.
+    const calendar = {
+      holidays: [],
+      workWeek: [1, 2, 3, 4, 5],
+      extraWorkingDays: ["2026-10-10"],
+    };
+    expect(variance("2026-10-12", "2026-10-09", calendar)).toBe(2);
   });
   it("retains an entire subtree when outdenting", () => {
     const s = setup();

@@ -27,6 +27,7 @@ import { dateLabel, number, type Zoom } from "./scheduleShared";
 /** Project title, dates and the three headline metrics. */
 export const ScheduleHeading = memo(function ScheduleHeading({
   name,
+  calendarLabel,
   startDate,
   finishDate,
   physical,
@@ -36,6 +37,7 @@ export const ScheduleHeading = memo(function ScheduleHeading({
   onOpenCalendar,
 }: {
   name: string;
+  calendarLabel: string;
   startDate: string;
   finishDate: string;
   physical: number;
@@ -58,9 +60,7 @@ export const ScheduleHeading = memo(function ScheduleHeading({
             <CalendarDays size={13} />
             {dateLabel(startDate)} — {dateLabel(finishDate)}
           </span>
-          <span className="hidden lg:inline">
-            T2–T7 · 08:00–12:00 / 13:00–17:00
-          </span>
+          <span className="hidden lg:inline">{calendarLabel}</span>
           <button
             className="text-indigo-600 hover:underline"
             onClick={onOpenCalendar}

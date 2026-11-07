@@ -21,6 +21,7 @@ import {
   calendarDaysBetween,
   isWorkingDay,
   nextWorkingDate,
+  shiftMinutes,
 } from "../engine/schedulingEngine";
 import type { ProjectInput, ScheduledTask } from "../engine/types";
 import {
@@ -54,6 +55,7 @@ import {
   ProposalDialog,
 } from "./ScheduleDialogs";
 import { useGanttDrag } from "./useGanttDrag";
+import { shiftLabel, workWeekLabel } from "../../../domain/calendarText";
 
 type Dialog = "link" | "calendar" | "help" | "load" | "baseline" | null;
 
@@ -282,9 +284,10 @@ export function ScheduleWorkspace() {
         : result.finishDate,
     [compare, baseline, result.finishDate],
   );
+  const shift = project.calendar.shift;
   const geometry = useMemo<TimelineGeometry>(
-    () => ({ start, dayWidth }),
-    [start, dayWidth],
+    () => ({ start, dayWidth, shift: shiftMinutes({ shift }) }),
+    [start, dayWidth, shift],
   );
   const totalDays = Math.max(40, calendarDaysBetween(start, latest) + 10),
     timelineWidth = totalDays * dayWidth;
@@ -307,8 +310,7 @@ export function ScheduleWorkspace() {
     () => new Map(baseline?.tasks.map((task) => [task.id, task]) ?? []),
     [baseline],
   );
-  const varianceHolidays =
-    baseline?.calendar?.holidays ?? project.calendar.holidays;
+  const varianceCalendar = baseline?.calendar ?? project.calendar;
   const todayX =
     calendarDaysBetween(start, project.statusDate) * dayWidth + dayWidth / 2;
   const leaves = useMemo(
@@ -464,6 +466,7 @@ export function ScheduleWorkspace() {
     <section className="schedule-module" aria-label="Module lập tiến độ">
       <ScheduleHeading
         name={project.name}
+        calendarLabel={`${workWeekLabel(project.calendar)} · ${shiftLabel(project.calendar)}`}
         startDate={project.startDate}
         finishDate={result.finishDate}
         physical={physical}
@@ -570,7 +573,7 @@ export function ScheduleWorkspace() {
                   showCritical={critical}
                   compare={compare}
                   base={baselineMap.get(task.id)}
-                  varianceHolidays={varianceHolidays}
+                  varianceCalendar={varianceCalendar}
                   predecessors={incoming.get(task.id)?.join(", ") ?? ""}
                   resourceById={resourceById}
                   peaks={peaks}
@@ -697,13 +700,13 @@ export function ScheduleWorkspace() {
           initial={{
             startDate: project.startDate,
             statusDate: project.statusDate,
-            holidays: project.calendar.holidays,
+            calendar: project.calendar,
           }}
           onSubmit={(values) =>
             session.commit((data) => {
               data.startDate = values.startDate;
               data.statusDate = values.statusDate;
-              data.calendar.holidays = values.holidays;
+              data.calendar = values.calendar;
             }, "Đã cập nhật lịch và tính lại toàn bộ dự án")
           }
           close={closeDialog}

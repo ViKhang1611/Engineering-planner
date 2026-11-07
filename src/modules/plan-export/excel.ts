@@ -1,6 +1,7 @@
 import { toRows } from "../data/serialization";
 import type { PaperSize } from "exceljs";
 import type { ExportJob, Progress } from "./model";
+import { isWorkingDay } from "../schedule/engine/schedulingEngine";
 import {
   headings,
   planRange,
@@ -186,23 +187,26 @@ export async function exportPlanExcel(
         ) * 14,
       ),
     );
-    const start = timePosition(task.startAt, range.start),
+    const start = timePosition(task.startAt, range.start, s.project.calendar),
       finish =
-        task.duration === 0 ? start : timePosition(task.finishAt, range.start),
+        task.duration === 0
+          ? start
+          : timePosition(task.finishAt, range.start, s.project.calendar),
       physical = start + ((finish - start) * task.physicalPct) / 100,
       color = taskColor(task, s);
     for (let i = 0; i < columns.length; i++) {
       const c = columns[i],
         sunday =
-          options.scale === "day" &&
-          new Date(`${c.start}T00:00:00Z`).getUTCDay() === 0;
+          options.scale === "day" && !isWorkingDay(c.start, s.project.calendar);
       const active = finish > c.offset && start < c.endOffset,
         milestone =
           task.duration === 0 && start >= c.offset && start < c.endOffset;
       const baseActive =
         base &&
-        timePosition(base.finishAt, range.start) >= c.offset &&
-        timePosition(base.startAt, range.start) < c.endOffset;
+        timePosition(base.finishAt, range.start, s.project.calendar) >=
+          c.offset &&
+        timePosition(base.startAt, range.start, s.project.calendar) <
+          c.endOffset;
       if (!sunday && !active && !milestone && !baseActive) continue;
       const cell = row.getCell(11 + i);
       if (sunday)

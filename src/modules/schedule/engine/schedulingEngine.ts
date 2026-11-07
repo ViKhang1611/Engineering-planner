@@ -51,22 +51,87 @@ export function addCalendarDays(value: string, days: number): string {
 export function calendarDaysBetween(a: string, b: string): number {
   return Math.round((dateMs(b) - dateMs(a)) / DAY_MS);
 }
-/** Holiday lookup as a Set, cached per holidays array (arrays are replaced, not mutated, on edit). */
-const holidaySets = new WeakMap<string[], { size: number; set: Set<string> }>();
-function holidaySet(calendar: Calendar): Set<string> {
-  const list = calendar.holidays;
-  const cached = holidaySets.get(list);
+/** Monday–Saturday, the default work week (0 = Sunday). */
+export const DEFAULT_WORK_WEEK: readonly number[] = [1, 2, 3, 4, 5, 6];
+export const DEFAULT_SHIFT = { morningStart: "08:00", afternoonStart: "13:00" };
+/** Lookup Sets cached per array (arrays are replaced, not mutated, on edit). */
+const setCache = new WeakMap<
+  readonly (string | number)[],
+  { size: number; set: Set<string | number> }
+>();
+function cachedSet<T extends string | number>(list: readonly T[]): Set<T> {
+  const cached = setCache.get(list);
   // Length check guards against an array mutated in place after caching.
-  if (cached && cached.size === list.length) return cached.set;
-  const set = new Set(list);
-  holidaySets.set(list, { size: list.length, set });
+  if (cached && cached.size === list.length) return cached.set as Set<T>;
+  const set = new Set<T>(list);
+  setCache.set(list, { size: list.length, set });
   return set;
 }
-export function isWorkingDay(value: string, calendar: Calendar): boolean {
+/** 0 = Sunday … 6 = Saturday. */
+export function weekdayOf(value: string): number {
   // Days since 1970-01-01 (a Thursday); +4 maps it to 0 = Sunday.
   const days = Math.floor(dateMs(value) / DAY_MS);
-  const weekday = (((days + 4) % 7) + 7) % 7;
-  return weekday !== 0 && !holidaySet(calendar).has(value);
+  return (((days + 4) % 7) + 7) % 7;
+}
+export function isWorkingDay(value: string, calendar: Calendar): boolean {
+  if (cachedSet(calendar.holidays).has(value)) return false;
+  if (
+    calendar.extraWorkingDays &&
+    cachedSet(calendar.extraWorkingDays).has(value)
+  )
+    return true;
+  return cachedSet(calendar.workWeek ?? DEFAULT_WORK_WEEK).has(
+    weekdayOf(value),
+  );
+}
+const TIME = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const toMinutes = (value: string) => {
+  const match = TIME.exec(value);
+  return match ? Number(match[1]) * 60 + Number(match[2]) : NaN;
+};
+/** Wall-clock minutes of day at which the morning and afternoon blocks start. */
+export function shiftMinutes(calendar: Pick<Calendar, "shift">): {
+  morning: number;
+  afternoon: number;
+} {
+  const shift = calendar.shift ?? DEFAULT_SHIFT;
+  return {
+    morning: toMinutes(shift.morningStart),
+    afternoon: toMinutes(shift.afternoonStart),
+  };
+}
+/** Throws SchedulingError when the calendar cannot drive a schedule. */
+export function validateCalendar(calendar: Calendar) {
+  const fail = (message: string): never => {
+    throw new SchedulingError("INVALID_CALENDAR", message);
+  };
+  if (!calendar || !Array.isArray(calendar.holidays))
+    fail("Lịch làm việc không hợp lệ.");
+  calendar.holidays.forEach(parseDate);
+  if (calendar.workWeek !== undefined) {
+    const week = calendar.workWeek;
+    if (
+      !Array.isArray(week) ||
+      !week.length ||
+      week.some((d) => !Number.isInteger(d) || d < 0 || d > 6) ||
+      new Set(week).size !== week.length
+    )
+      fail("Chọn ít nhất một ngày làm việc trong tuần (T2–CN, không trùng).");
+  }
+  if (calendar.extraWorkingDays !== undefined) {
+    if (!Array.isArray(calendar.extraWorkingDays))
+      fail("Danh sách ngày làm bù không hợp lệ.");
+    calendar.extraWorkingDays.forEach(parseDate);
+  }
+  if (calendar.shift !== undefined) {
+    const { morning, afternoon } = shiftMinutes(calendar);
+    if (!Number.isFinite(morning) || !Number.isFinite(afternoon))
+      fail("Giờ bắt đầu ca phải theo dạng HH:MM.");
+    if (afternoon < morning + 240)
+      fail("Ca chiều phải bắt đầu sau khi ca sáng (4 giờ) kết thúc.");
+    if (afternoon + 240 > 24 * 60)
+      fail("Ca chiều (4 giờ) phải kết thúc trong ngày.");
+  }
 }
 export function nextWorkingDate(value: string, calendar: Calendar): string {
   let date = value;
@@ -80,16 +145,19 @@ export function nextWorkingDate(value: string, calendar: Calendar): string {
   );
 }
 /** A project-local working-minute axis. Only working minutes exist on this axis.
- * Intervals are [start, finish). At 480 minutes, a start is next day's 08:00,
- * but a finish is preceding day's 17:00. Lunch 12:00–13:00 is excluded. */
+ * Intervals are [start, finish). At 480 minutes, a start is the next working
+ * day's morning start, but a finish is the preceding day's afternoon end.
+ * The break between the two 4-hour blocks is excluded (default 12:00–13:00). */
 export class WorkingClock {
   private dates: string[] = [];
   private indices = new Map<string, number>();
+  private shift: { morning: number; afternoon: number };
   constructor(
     public epoch: string,
     public calendar: Calendar,
   ) {
-    calendar.holidays.forEach(parseDate);
+    validateCalendar(calendar);
+    this.shift = shiftMinutes(calendar);
     this.epoch = nextWorkingDate(epoch, calendar);
     this.dates.push(this.epoch);
     this.indices.set(this.epoch, 0);
@@ -144,7 +212,9 @@ export class WorkingClock {
     }
     const date = this.dateAt(day);
     const wall =
-      minute < 240 || (finish && minute === 240) ? 480 + minute : 540 + minute;
+      minute < 240 || (finish && minute === 240)
+        ? this.shift.morning + minute
+        : this.shift.afternoon + minute - 240;
     return {
       date,
       at: `${date}T${String(Math.floor(wall / 60)).padStart(2, "0")}:${String(wall % 60).padStart(2, "0")}:00+07:00`,

@@ -1,6 +1,7 @@
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import type { ExportJob, Progress } from "./model";
+import { isWorkingDay } from "../schedule/engine/schedulingEngine";
 import {
   planRange,
   planRows,
@@ -358,7 +359,7 @@ export async function exportPlanPdf(
         win.forEach((c, j) => {
           const sunday =
             options.scale === "day" &&
-            new Date(`${c.start}T00:00:00Z`).getUTCDay() === 0;
+            !isWorkingDay(c.start, s.project.calendar);
           rect(
             page,
             chartX + j * cellWidth,
@@ -368,9 +369,11 @@ export async function exportPlanPdf(
             sunday ? rgb(0.93, 0.94, 0.95) : rgb(1, 1, 1),
           );
         });
-        const a = timePosition(task.startAt, range.start),
+        const a = timePosition(task.startAt, range.start, s.project.calendar),
           b =
-            task.duration === 0 ? a : timePosition(task.finishAt, range.start),
+            task.duration === 0
+              ? a
+              : timePosition(task.finishAt, range.start, s.project.calendar),
           barColor = color(taskColor(task, s));
         if (task.duration === 0 && a >= lo && a < hi) {
           const dx = xPosition(a),
@@ -420,8 +423,8 @@ export async function exportPlanPdf(
           }
         }
         if (base) {
-          const a = timePosition(base.startAt, range.start),
-            b = timePosition(base.finishAt, range.start);
+          const a = timePosition(base.startAt, range.start, s.project.calendar),
+            b = timePosition(base.finishAt, range.start, s.project.calendar);
           if (b >= lo && a < hi)
             rect(
               page,
@@ -444,10 +447,12 @@ export async function exportPlanPdf(
           ap = timePosition(
             d.type[0] === "F" ? a.finishAt : a.startAt,
             range.start,
+            s.project.calendar,
           ),
           bp = timePosition(
             d.type[1] === "F" ? b.finishAt : b.startAt,
             range.start,
+            s.project.calendar,
           ),
           ay = centers.get(a.id),
           by = centers.get(b.id),

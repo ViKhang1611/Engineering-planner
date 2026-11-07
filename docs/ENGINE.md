@@ -14,9 +14,16 @@ Giới hạn: 5.000 tasks, 50.000 dependencies; chân trời khoảng 100 năm. 
 
 ## Lịch và biên thời gian
 
-Ngày nhập dùng ISO `yyyy-MM-dd`, hiển thị `dd/MM/yyyy`. Thời điểm kết quả có offset `+07:00` (Asia/Ho_Chi_Minh). Lịch mặc định cố định T2–T7, hai ca 08–12 và 13–17. Ngoại lệ MVP là danh sách ngày lễ nghỉ cả ngày. Không trừ ngày lễ tự động theo tên lễ; quản lý nhập ngày nghỉ của công ty.
+Ngày nhập dùng ISO `yyyy-MM-dd`, hiển thị `dd/MM/yyyy`. Thời điểm kết quả có offset `+07:00` (Asia/Ho_Chi_Minh). Lịch mặc định T2–T7, hai ca 08–12 và 13–17. `Calendar` cấu hình được:
 
-Quy đổi 1 ngày công = 480 phút. Mọi phép cộng duration/lag và float chạy trên trục **phút làm việc**, bỏ qua nghỉ trưa, Chủ Nhật và ngày lễ. Các công việc dùng cùng một calendar.
+- `workWeek`: các thứ làm việc (0 = CN … 6 = T7), ít nhất một ngày, không trùng.
+- `extraWorkingDays`: ngày làm bù, làm việc dù rơi vào ngày nghỉ hằng tuần.
+- `holidays`: ngày lễ nghỉ cả ngày; luôn thắng, kể cả khi trùng ngày làm bù. Không trừ ngày lễ tự động theo tên lễ; quản lý nhập ngày nghỉ của công ty.
+- `shift`: giờ bắt đầu ca sáng và ca chiều (`HH:MM`). Mỗi ca luôn 4 giờ; ca chiều phải bắt đầu sau khi ca sáng kết thúc và kết thúc trong ngày. Chỉ đổi cách hiển thị giờ (`startAt`/`finishAt`, vị trí thanh Gantt và bản xuất), không đổi trục phút làm việc.
+
+`validateCalendar` kiểm tra các quy tắc trên; trường bỏ trống dùng mặc định nên dữ liệu cũ không cần chuyển đổi. Baseline lưu bản sao lịch lúc chốt, Variance đếm ngày làm việc theo lịch đó. Chưa hỗ trợ lịch riêng theo nguồn lực hay số giờ/ngày khác 8: cả hai đổi quy ước 1 ngày = 480 phút mà dữ liệu và baseline cũ dựa vào.
+
+Quy đổi 1 ngày công = 480 phút. Mọi phép cộng duration/lag và float chạy trên trục **phút làm việc**, bỏ qua giờ nghỉ giữa hai ca, ngày nghỉ hằng tuần và ngày lễ. Các công việc dùng cùng một calendar.
 
 Khoảng thực hiện là `[start, finish)`. Ví dụ task 1 ngày bắt đầu T2 08:00 và kết thúc T2 17:00; task FS tiếp theo bắt đầu T3 08:00. Task 0.5 ngày từ 08:00 kết thúc 12:00; FS tiếp theo bắt đầu 13:00. Hai thời điểm này có cùng tọa độ làm việc nhưng cách hiển thị start/finish khác nhau tại biên nghỉ.
 

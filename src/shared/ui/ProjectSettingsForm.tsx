@@ -1,6 +1,12 @@
 import { useState } from "react";
-import { Save, CalendarDays } from "lucide-react";
+import { Save } from "lucide-react";
 import type { ProjectSettingsInput } from "../../domain/workspace";
+import {
+  CalendarFields,
+  calendarDraft,
+  calendarFromDraft,
+  splitDates,
+} from "./CalendarFields";
 
 export function ProjectSettingsForm({
   initial,
@@ -13,9 +19,12 @@ export function ProjectSettingsForm({
 }) {
   const [fields, setFields] = useState(initial);
   const [holidays, setHolidays] = useState(initial.holidays.join("\n"));
+  const [calendar, setCalendar] = useState(() =>
+    calendarDraft({ holidays: [], ...initial.calendar }),
+  );
   const [saved, setSaved] = useState(false);
   const field = (
-    key: Exclude<keyof ProjectSettingsInput, "holidays">,
+    key: Exclude<keyof ProjectSettingsInput, "holidays" | "calendar">,
     value: string,
   ) => {
     setSaved(false);
@@ -29,10 +38,8 @@ export function ProjectSettingsForm({
         setSaved(
           onSubmit({
             ...fields,
-            holidays: holidays
-              .split(/[\n,]/)
-              .map((value) => value.trim())
-              .filter(Boolean),
+            holidays: splitDates(holidays),
+            calendar: calendarFromDraft(calendar),
           }),
         );
       }}
@@ -85,14 +92,13 @@ export function ProjectSettingsForm({
           />
         </label>
       </div>
-      <div className="calendar-rule">
-        <CalendarDays size={18} />
-        <div>
-          <strong>Lịch làm việc tiêu chuẩn</strong>
-          <p>Thứ Hai – Thứ Bảy · 08:00–12:00 và 13:00–17:00</p>
-          <p className="numeric">8 giờ/ngày · Nghỉ Chủ Nhật</p>
-        </div>
-      </div>
+      <CalendarFields
+        value={calendar}
+        onChange={(next) => {
+          setCalendar(next);
+          setSaved(false);
+        }}
+      />
       <label className="field">
         Ngày nghỉ lễ
         <textarea

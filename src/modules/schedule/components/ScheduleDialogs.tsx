@@ -1,8 +1,15 @@
 import { useState } from "react";
 import { CalendarDays, Check, Flag, Link2 } from "lucide-react";
 import { Modal } from "../../../shared/ui/Modal";
+import {
+  CalendarFields,
+  calendarDraft,
+  calendarFromDraft,
+  splitDates,
+} from "../../../shared/ui/CalendarFields";
 import type {
   Baseline,
+  Calendar,
   Dependency,
   DependencyType,
   ScheduledTask,
@@ -115,10 +122,10 @@ export function LinkDialog({
 export interface CalendarValues {
   startDate: string;
   statusDate: string;
-  holidays: string[];
+  calendar: Calendar;
 }
 
-/** Project start, status date and holidays. Starts from the saved values. */
+/** Project start, status date and the working calendar. Starts from saved values. */
 export function CalendarDialog({
   initial,
   onSubmit,
@@ -130,7 +137,8 @@ export function CalendarDialog({
 }) {
   const [projectStart, setProjectStart] = useState(initial.startDate),
     [statusDate, setStatusDate] = useState(initial.statusDate),
-    [holidays, setHolidays] = useState(initial.holidays.join(", "));
+    [holidays, setHolidays] = useState(initial.calendar.holidays.join(", ")),
+    [calendar, setCalendar] = useState(() => calendarDraft(initial.calendar));
   return (
     <Modal title="Lịch & ngày báo cáo" close={close}>
       <form
@@ -141,10 +149,10 @@ export function CalendarDialog({
             onSubmit({
               startDate: projectStart,
               statusDate,
-              holidays: holidays
-                .split(",")
-                .map((value) => value.trim())
-                .filter(Boolean),
+              calendar: {
+                ...calendarFromDraft(calendar),
+                holidays: splitDates(holidays),
+              },
             })
           )
             close();
@@ -168,6 +176,7 @@ export function CalendarDialog({
             onChange={(event) => setStatusDate(event.target.value)}
           />
         </label>
+        <CalendarFields value={calendar} onChange={setCalendar} />
         <label className="field">
           Ngày lễ (yyyy-MM-dd, phân cách dấu phẩy)
           <textarea
@@ -178,9 +187,9 @@ export function CalendarDialog({
           />
         </label>
         <p className="info-box">
-          Thứ Hai–Thứ Bảy: 08:00–12:00, 13:00–17:00. Nghỉ Chủ Nhật và ngày lễ.
-          Múi giờ Asia/Ho_Chi_Minh. Ngày báo cáo là cuối ngày; vạch hồng trên
-          Gantt biểu diễn ngày báo cáo.
+          Mỗi ngày làm việc gồm hai ca 4 giờ. Ngày lễ luôn nghỉ, kể cả khi trùng
+          ngày làm bù. Múi giờ Asia/Ho_Chi_Minh. Ngày báo cáo là cuối ngày; vạch
+          hồng trên Gantt biểu diễn ngày báo cáo.
         </p>
         <button className="primary-button w-full" type="submit">
           <CalendarDays size={15} />

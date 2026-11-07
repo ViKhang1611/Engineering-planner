@@ -1,4 +1,4 @@
-import type { ProjectInput, Baseline } from "./project";
+import type { ProjectInput, Baseline, Calendar } from "./project";
 
 export const WORKSPACE_VIEWS = [
   "portfolio",
@@ -28,4 +28,6 @@ export interface ProjectSettingsInput {
   startDate: string;
   statusDate: string;
   holidays: string[];
+  /** Work week, makeup days and shift times; omitted fields use defaults. */
+  calendar?: Omit<Calendar, "holidays">;
 }

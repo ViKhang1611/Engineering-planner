@@ -26,6 +26,11 @@ export function ProjectSettings() {
             startDate: p.startDate,
             statusDate: p.statusDate,
             holidays: p.calendar.holidays,
+            calendar: {
+              workWeek: p.calendar.workWeek,
+              extraWorkingDays: p.calendar.extraWorkingDays,
+              shift: p.calendar.shift,
+            },
           }}
           onSubmit={(input) => update(p.id, input)}
         />

@@ -29,6 +29,7 @@ import { ProjectSettings } from "../modules/project-settings/ProjectSettings";
 import { moduleRegistry } from "./moduleRegistry";
 import { useWorkspaceRouter } from "./useWorkspaceRouter";
 import { layoutVariables } from "../shared/designTokens";
+import { workWeekLabel } from "../domain/calendarText";
 
 const ScheduleWorkspace = lazy(() =>
   import("../modules/schedule").then((module) => ({
@@ -289,11 +290,12 @@ const PROJECT_TABS = moduleRegistry.filter((item) =>
 );
 
 function ShellViewbar() {
-  const { view, navigate, revision } = useWorkspaceStore(
+  const { view, navigate, revision, calendar } = useWorkspaceStore(
     useShallow((s) => ({
       view: s.view,
       navigate: s.navigate,
       revision: s.projects[s.activeProjectId].revision,
+      calendar: s.projects[s.activeProjectId].project.calendar,
     })),
   );
   return (
@@ -315,7 +317,7 @@ function ShellViewbar() {
         ))}
       </div>
       <span className="shell-calendar">
-        T2–T7 · <span className="numeric">8h/ngày</span>
+        {workWeekLabel(calendar)} · <span className="numeric">8h/ngày</span>
       </span>
       <span className="revision numeric">r{revision}</span>
     </div>
