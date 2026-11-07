@@ -1085,9 +1085,6 @@
     padding-left: 14px;
     min-width: 90px;
   }
-  .header-status-cluster {
-    display: none;
-  }
 }
 
 @media (max-width: 1080px) {
