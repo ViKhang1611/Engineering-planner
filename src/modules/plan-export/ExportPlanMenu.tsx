@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { Download, ChevronDown } from "lucide-react";
 import { useProjectStore } from "../../store/useProjectStore";
 import { useTheme } from "../../theme/ThemeProvider";
@@ -13,7 +14,15 @@ import {
   type ExportJob,
 } from "./model";
 export function ExportPlanMenu() {
-  const state = useProjectStore(),
+  // Only plan data: row selection and other session UI state do not re-render
+  // this always-mounted header menu.
+  const state = useProjectStore(
+      useShallow((s) => ({
+        project: s.project,
+        result: s.result,
+        baseline: s.baseline,
+      })),
+    ),
     { theme } = useTheme(),
     [open, setOpen] = useState(false),
     [options, setOptions] = useState<ExportOptions | null>(null),
@@ -43,15 +52,20 @@ export function ExportPlanMenu() {
   useEffect(() => {
     close();
   }, [state.project.id, close]);
-  const snapshot = {
-      project: state.project,
-      result: state.result,
-      baseline: state.baseline,
-      theme,
-      exportedAt: new Date().toISOString(),
-    },
-    range = planRange(snapshot),
-    columns = timelineColumns(range.start, range.end, options?.scale ?? "day");
+  // planRange sorts every task date; compute it only while the dialog is open
+  // and only when the plan itself changes.
+  const range = useMemo(
+      () =>
+        options
+          ? planRange({ ...state, theme, exportedAt: "" })
+          : { start: state.project.startDate, end: state.project.startDate },
+      [options, state, theme],
+    ),
+    columns = useMemo(
+      () =>
+        options ? timelineColumns(range.start, range.end, options.scale) : [],
+      [options, range],
+    );
   const start = async () => {
     if (!options) return;
     setBusy(true);
@@ -62,8 +76,13 @@ export function ExportPlanMenu() {
       // XLSX includes Project Data for round-trip, so it needs file bytes.
       const project =
         options.format === "xlsx"
-          ? (await inlineAttachments(snapshot.project)).project
-          : snapshot.project;
+          ? (await inlineAttachments(state.project)).project
+          : state.project;
+      const snapshot = {
+        ...state,
+        theme,
+        exportedAt: new Date().toISOString(),
+      };
       const job: ExportJob = {
         snapshot: structuredClone({ ...snapshot, project }),
         options,

@@ -3,8 +3,8 @@ import { IDBFactory, IDBKeyRange } from "fake-indexeddb";
 import { createSeed } from "../src/modules/schedule/data/seed";
 import type { WorkspaceDocument } from "../src/domain/workspace";
 
-type Tab = Awaited<ReturnType<typeof openTab>>;
-const tabs: Tab[] = [];
+/** Open tabs, closed after each test (typed loosely to avoid a cycle with openTab). */
+const tabs: { repo: { closePersistence(): void } }[] = [];
 
 function seedDocument(): WorkspaceDocument {
   const projects = ["Dự án A", "Dự án B"].map((name, i) => {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useProjectStore } from "../../store/useProjectStore";
 import {
   useWorkspaceStore,
@@ -24,7 +25,16 @@ import {
 import { Modal } from "../../shared/ui/Modal";
 export function DataWorkspace() {
   const state = useProjectStore(),
-    workspace = useWorkspaceStore((s) => s),
+    workspace = useWorkspaceStore(
+      useShallow((s) => ({
+        saving: s.saving,
+        persistenceError: s.persistenceError,
+        actionError: s.actionError,
+        projectCount: s.projectOrder.length,
+        flushPersistence: s.flushPersistence,
+        restoreWorkspace: s.restoreWorkspace,
+      })),
+    ),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [incoming, setIncoming] = useState<ProjectInput | null>(null),
@@ -175,13 +185,13 @@ export function DataWorkspace() {
         </section>
         <section className="panel">
           <h3>Sao lưu workspace</h3>
-          <p>{workspace.projectOrder.length} dự án trên thiết bị này.</p>
+          <p>{workspace.projectCount} dự án trên thiết bị này.</p>
           <button
             disabled={busy}
             onClick={() =>
               run(async () => {
                 const { document, missing } = await inlineDocument(
-                  workspaceDocument(workspace),
+                  workspaceDocument(workspaceStore.getState()),
                 );
                 download(
                   new Blob([JSON.stringify(document, null, 2)], {
