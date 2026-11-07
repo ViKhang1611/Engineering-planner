@@ -35,7 +35,7 @@ npm run preview
 ## Chức năng
 
 - **Workspace:** sidebar thu gọn; nhiều dự án; chuyển view; sửa hợp đồng, chủ đầu tư, ngày bắt đầu/ngày báo cáo và ngày nghỉ.
-- **WBS/Gantt:** thêm/xóa, indent/outdent, đánh mã cây tự động; inline sửa tên, duration, ngày bắt đầu, Physical %, tiền nhiệm; FS/SS/FF/SF và lag/lead; CPM ES/EF/LS/LF/Float; summary roll-up; drag/resize có preview và xác nhận; undo/redo 10 bước.
+- **WBS/Gantt:** thêm/xóa, indent/outdent, đánh mã cây tự động; inline sửa tên, duration, ngày bắt đầu, Physical %, tiền nhiệm; FS/SS/FF/SF và lag/lead; CPM ES/EF/LS/LF/Float; summary roll-up; drag/resize có preview và xác nhận; undo/redo 100 bước.
 - **Cuộn/hover:** grid và Gantt dùng chung một hàng 36px và một viewport cuộn dọc, virtualization 5.000 tasks. Cuộn ngang riêng cho bảng và timeline.
 - **Baseline:** tạo Baseline 0/1/2…; chọn bản đối chiếu; thanh xám 4px; Variance theo ngày làm việc trên lịch baseline. Chốt mới không ghi đè bản cũ.
 - **Chi tiết task:** nhấp tên/WBS hoặc nhấp đúp hàng; checklist trọng số, Physical tự động; gán kỹ sư/thiết bị/vật tư; FAT/SAT; ngày và số biên bản; ghi chú; đính kèm tệp, tải lại và xóa tệp.

@@ -1,5 +1,7 @@
+import { produce, setAutoFreeze } from "immer";
 import {
   normalizeExecution,
+  normalizeTask,
   validateExtensions,
   overallProgress,
 } from "../../../domain/execution";
@@ -48,17 +50,41 @@ export interface ScheduleSession extends Snapshot {
   clearError: () => void;
   setError: (message: string) => void;
 }
+// Committed projects are frozen. Besides catching accidental in-place edits
+// (which would corrupt undo snapshots that share objects), frozen subtrees
+// let immer skip unchanged parts such as baselines when finalizing a commit.
+setAutoFreeze(true);
+
+/** Undo/redo depth per project session. */
+export const HISTORY_LIMIT = 100;
+
 /**
- * Working copy for a commit. Baselines are immutable snapshots (a capture adds
- * a new one; nothing edits one in place) and each holds a full copy of every
- * task, so they are shared by reference instead of deep-cloned on every edit.
- * The array itself is copied so mutators can still add or remove baselines.
+ * Applies a mutation with structural sharing (immer): only objects the
+ * mutation touches are copied, everything else is shared with the previous
+ * version. Undo snapshots therefore cost only what changed, and baselines
+ * (full task snapshots) are never copied. Committed projects are frozen, so any
+ * edit must go through commit.
  */
-export function cloneForCommit(project: ProjectInput): ProjectInput {
-  const { baselines, ...rest } = project;
-  const copy = structuredClone(rest) as ProjectInput;
-  if (baselines !== undefined) copy.baselines = [...baselines];
-  return copy;
+export function applyCommit(
+  base: ProjectInput,
+  mutate: (project: ProjectInput) => void,
+): ProjectInput {
+  const baseTasks = new Set(base.tasks);
+  let project = produce(base, (draft) => {
+    mutate(draft as ProjectInput);
+    draft.id = base.id; // Workspace identity cannot be changed by import.
+  });
+  // Unchanged tasks were normalized by an earlier commit; only tasks this
+  // commit created or touched can need it.
+  const touched: number[] = [];
+  project.tasks.forEach((task, index) => {
+    if (!baseTasks.has(task)) touched.push(index);
+  });
+  if (touched.length)
+    project = produce(project, (draft) => {
+      for (const index of touched) normalizeTask(draft.tasks[index] as Task);
+    });
+  return project;
 }
 /** Session actions write into their project record in the one workspace store. */
 export function createScheduleSession(
@@ -92,23 +118,23 @@ export function createScheduleSession(
     clearError: () => set({ error: "" }),
     setError: (error) => set({ error }),
     commit: (mutate, message) => {
-      const state = get(),
-        project = cloneForCommit(state.project);
+      const state = get();
       try {
-        mutate(project);
-        project.id = state.project.id; // Workspace identity cannot be changed by import.
-        normalizeExecution(project);
+        let project = applyCommit(state.project, mutate);
         validateExtensions(project);
         const result = scheduleProject(project);
-        project.progressHistory = [
-          ...(project.progressHistory ?? []).filter(
-            (p) => p.date !== project.statusDate,
-          ),
-          {
-            date: project.statusDate,
-            physicalPct: overallProgress(result.tasks),
-          },
-        ].sort((a, b) => a.date.localeCompare(b.date));
+        project = {
+          ...project,
+          progressHistory: [
+            ...(project.progressHistory ?? []).filter(
+              (p) => p.date !== project.statusDate,
+            ),
+            {
+              date: project.statusDate,
+              physicalPct: overallProgress(result.tasks),
+            },
+          ].sort((a, b) => a.date.localeCompare(b.date)),
+        };
         set({
           project,
           baseline:
@@ -116,7 +142,7 @@ export function createScheduleSession(
             null,
           result,
           history: [
-            ...state.history.slice(-9),
+            ...state.history.slice(-(HISTORY_LIMIT - 1)),
             { project: state.project, baseline: state.baseline },
           ],
           future: [],
@@ -363,7 +389,7 @@ export function createScheduleSession(
         result: scheduleProject(next.project),
         selected: [],
         history: [
-          ...state.history.slice(-9),
+          ...state.history.slice(-(HISTORY_LIMIT - 1)),
           { project: state.project, baseline: state.baseline },
         ],
         future: state.future.slice(1),
@@ -413,7 +439,7 @@ export function createScheduleSession(
           selected: [],
           collapsed: new Set(),
           history: [
-            ...state.history.slice(-9),
+            ...state.history.slice(-(HISTORY_LIMIT - 1)),
             { project: state.project, baseline: state.baseline },
           ],
           future: [],

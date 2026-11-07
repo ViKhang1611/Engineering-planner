@@ -35,7 +35,15 @@ export function taskStatus(task: Task): ExecutionStatus {
       : "todo";
 }
 export function normalizeExecution(project: ProjectInput) {
-  for (const task of project.tasks) {
+  for (const task of project.tasks) normalizeTask(task);
+}
+/**
+ * Derives progress weight, checklist Physical %, acceptance and Kanban status
+ * for one task. Assigns only derived fields, so running it on an
+ * already-normalized task changes nothing.
+ */
+export function normalizeTask(task: Task) {
+  {
     task.progressWeight ??= Math.max(1, task.duration);
     if (task.progressMode === "checklist") {
       const checks = task.checklist ?? [],

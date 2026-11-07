@@ -10,10 +10,7 @@ import {
   overallProgress,
   validateExtensions,
 } from "../src/domain/execution";
-import {
-  cloneForCommit,
-  createScheduleSession,
-} from "../src/modules/schedule/model/createScheduleSession";
+import { createScheduleSession } from "../src/modules/schedule/model/createScheduleSession";
 
 const base = createLargeProject();
 const leaf = base.tasks.filter((t) => t.parentId);
@@ -69,8 +66,13 @@ for (let i = 0; i < 3; i++) state.captureBaseline();
 const withBaselines = median(() => {
   state.updateTask(leaf[10].id, { duration: (d++ % 5) + 1 });
 });
-const cloneAll = median(() => structuredClone(state.project));
-const cloneShared = median(() => cloneForCommit(state.project));
+// Structural sharing: how many task objects an edit leaves shared with the
+// previous version (what an undo snapshot costs).
+const before = state.project;
+state.updateTask(leaf[10].id, { duration: (d++ % 5) + 1 });
+const sharedTasks = state.project.tasks.filter(
+  (t, i) => t === before.tasks[i],
+).length;
 
 console.log(
   JSON.stringify(
@@ -81,8 +83,7 @@ console.log(
       fullUpdateTaskMedianMs: fullCommit,
       withThreeBaselines: {
         fullUpdateTaskMedianMs: withBaselines,
-        deepCloneEverythingMs: cloneAll,
-        cloneSharingBaselinesMs: cloneShared,
+        tasksSharedWithPreviousVersion: `${sharedTasks}/${before.tasks.length}`,
       },
     },
     null,

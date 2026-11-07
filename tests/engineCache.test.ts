@@ -7,8 +7,8 @@ import {
   SchedulingError,
 } from "../src/modules/schedule/engine/schedulingEngine";
 import {
-  cloneForCommit,
   createScheduleSession,
+  HISTORY_LIMIT,
   type ScheduleSession,
 } from "../src/modules/schedule/model/createScheduleSession";
 import { createSeed } from "../src/modules/schedule/data/seed";
@@ -63,16 +63,60 @@ describe("commit cloning", () => {
     return () => state;
   }
 
-  it("shares immutable baselines but deep-copies everything editable", () => {
+  it("shares unchanged tasks and baselines with the previous version", () => {
     const s = session();
     s().captureBaseline();
-    const project = s().project;
-    const copy = cloneForCommit(project);
-    expect(copy.baselines![0]).toBe(project.baselines![0]);
-    expect(copy.baselines).not.toBe(project.baselines);
-    expect(copy.tasks).not.toBe(project.tasks);
-    expect(copy.tasks[0]).not.toBe(project.tasks[0]);
-    expect(copy).toEqual(project);
+    const before = s().project;
+    s().updateTask("drawing", { duration: 6 });
+    const after = s().project;
+    expect(after).not.toBe(before);
+    expect(after.baselines![0]).toBe(before.baselines![0]);
+    const changed = after.tasks.filter((t, i) => t !== before.tasks[i]);
+    expect(changed.map((t) => t.id)).toEqual(["drawing"]);
+    // The previous version (held by undo) is not modified.
+    expect(before.tasks.find((t) => t.id === "drawing")!.duration).toBe(4);
+  });
+
+  it("normalizes tasks the commit adds or changes", () => {
+    const s = session();
+    s().commit((p) => {
+      p.tasks.push({
+        id: "new",
+        parentId: null,
+        name: "Mới",
+        duration: 3,
+        physicalPct: 0,
+        assignments: [],
+        progressMode: "checklist",
+        checklist: [
+          { id: "a", title: "A", weight: 1, checked: true },
+          { id: "b", title: "B", weight: 3, checked: false },
+        ],
+      });
+    }, "add");
+    const added = s().project.tasks.find((t) => t.id === "new")!;
+    expect(added.physicalPct).toBe(25);
+    expect(added.progressWeight).toBe(3);
+    expect(added.executionStatus).toBe("active");
+  });
+
+  it("rolls back a failing mutation without touching the project", () => {
+    const s = session();
+    const before = s().project;
+    const ok = s().commit((p) => {
+      p.tasks[0].name = "changed";
+      throw new Error("boom");
+    }, "fail");
+    expect(ok).toBe(false);
+    expect(s().project).toBe(before);
+    expect(before.tasks[0].name).not.toBe("changed");
+  });
+
+  it(`keeps ${HISTORY_LIMIT} undo steps`, () => {
+    const s = session();
+    for (let i = 0; i < HISTORY_LIMIT + 5; i++)
+      s().updateTask("drawing", { duration: (i % 7) + 1 });
+    expect(s().history).toHaveLength(HISTORY_LIMIT);
   });
 
   it("keeps baselines and undo history intact across edits", () => {
