@@ -29,32 +29,6 @@
   position: relative;
 }
 
-.window-dots {
-  position: absolute;
-  top: 10px;
-  left: 6px;
-  display: flex;
-  gap: 6px;
-}
-
-.window-dots span {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  display: inline-block;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
-}
-
-.window-dots .dot-close {
-  background: #ff5f57;
-}
-.window-dots .dot-min {
-  background: #febc2e;
-}
-.window-dots .dot-max {
-  background: #28c840;
-}
-
 .shell-brand .brand-mark {
   flex-shrink: 0;
   background: linear-gradient(135deg, var(--accent), #ec4899);
@@ -198,17 +172,6 @@
   justify-content: center;
 }
 
-.sidebar-collapsed .window-dots {
-  left: 50%;
-  transform: translateX(-50%);
-  gap: 4px;
-}
-
-.sidebar-collapsed .window-dots span {
-  width: 7px;
-  height: 7px;
-}
-
 .sidebar-collapsed .nav-item,
 .sidebar-collapsed .sidebar-collapse {
   padding: 0;
@@ -287,8 +250,8 @@
   flex-shrink: 0;
 }
 
-.header-bell-chip,
-.header-cloud-chip {
+.header-bell-chip {
+  cursor: pointer;
   position: relative;
   width: 28px;
   height: 28px;
@@ -315,20 +278,6 @@
   font-weight: 700;
   display: grid;
   place-items: center;
-}
-
-.header-profile-ring {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ec4899, #6366f1);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  display: inline-grid;
-  place-items: center;
-  border: 2px solid #ffffffcc;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
 }
 
 .contract-code {

@@ -386,3 +386,10 @@ body:has([role="dialog"]) .floating-theme-dock {
 .export-plan-menu .modal-backdrop {
   z-index: 120;
 }
+
+/* "Solid" glass: opaque panels, so skip backdrop blur entirely (it is
+   recomputed on every scroll frame behind large, translucent areas). */
+:root[data-glass="solid"] * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}

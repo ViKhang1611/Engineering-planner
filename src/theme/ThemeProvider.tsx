@@ -107,7 +107,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             shell: "rgba(15, 23, 42, 0.94)",
             panel: "rgba(24, 35, 54, 0.96)",
             sidebar: "rgba(15, 23, 42, 0.92)",
-            blur: "10px",
+            blur: "0px",
           },
         }
       : {
@@ -127,7 +127,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             shell: "rgba(255, 255, 255, 0.92)",
             panel: "rgba(255, 255, 255, 0.96)",
             sidebar: "rgba(255, 255, 255, 0.88)",
-            blur: "10px",
+            blur: "0px",
           },
         };
     const glassCfg = alphaMap[appearance.glass];

@@ -93,10 +93,15 @@ export interface CustomAppearance {
 
 export const APPEARANCE_STORAGE_KEY = "forgeplan.appearance.v1";
 
+/**
+ * Defaults favour a working tool: opaque panels (no backdrop blur to
+ * recompute while scrolling a large Gantt) and no decorative banner.
+ * Saved per-device choices still apply.
+ */
 export const defaultAppearance: CustomAppearance = {
   wallpaper: "aurora",
-  glass: "frosted",
-  showHeroBanner: true,
+  glass: "solid",
+  showHeroBanner: false,
 };
 
 export interface ThemePreset {

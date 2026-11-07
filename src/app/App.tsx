@@ -8,7 +8,6 @@ import { Component, lazy, Suspense, type ReactNode } from "react";
 import {
   Bell,
   ChevronRight,
-  Cloud,
   Layers,
   PanelLeftClose,
   PanelLeftOpen,
@@ -115,11 +114,6 @@ function ShellSidebar() {
   return (
     <aside className="shell-sidebar" aria-label="Điều hướng chính">
       <div className="shell-brand">
-        <div className="window-dots" aria-hidden="true">
-          <span className="dot-close" />
-          <span className="dot-min" />
-          <span className="dot-max" />
-        </div>
         <span className="brand-mark">
           <Layers size={18} />
         </span>
@@ -269,18 +263,25 @@ function StorageStatus() {
   );
 }
 
+/** Open critical-path tasks; opens the dashboard where they are listed. */
 function HeaderStatusCluster() {
   const criticalCount = useWorkspaceStore(selectOpenCriticalCount);
+  const navigate = useWorkspaceStore((s) => s.navigate);
+  const label = criticalCount
+    ? `${criticalCount} việc đường găng chưa xong · mở Dashboard`
+    : "Không có việc đường găng tồn đọng · mở Dashboard";
   return (
-    <div className="header-status-cluster" aria-hidden="true">
-      <span className="header-bell-chip" title="Việc đường găng cần chú ý">
-        <Bell size={15} />
-        {criticalCount > 0 && <i>{criticalCount}</i>}
-      </span>
-      <span className="header-cloud-chip">
-        <Cloud size={15} />
-      </span>
-      <span className="header-profile-ring">PM</span>
+    <div className="header-status-cluster">
+      <button
+        type="button"
+        className="header-bell-chip"
+        aria-label={label}
+        title={label}
+        onClick={() => navigate("dashboard")}
+      >
+        <Bell size={15} aria-hidden="true" />
+        {criticalCount > 0 && <i aria-hidden="true">{criticalCount}</i>}
+      </button>
     </div>
   );
 }

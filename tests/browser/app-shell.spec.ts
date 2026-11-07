@@ -210,3 +210,16 @@ test("work week and shift times flow into the schedule and shell", async ({
   await page.reload();
   await expect(page.locator(".shell-calendar")).toContainText("T2–T6");
 });
+
+test("header bell is an accessible link to the dashboard", async ({ page }) => {
+  const bell = page.getByRole("button", { name: /việc đường găng/ });
+  await expect(bell).toBeVisible();
+  await bell.click();
+  await expect(
+    page.getByRole("heading", { name: "Dashboard điều hành", level: 2 }),
+  ).toBeVisible();
+  // Standalone app: no fake cloud/profile chips, no window dots.
+  await expect(
+    page.locator(".header-cloud-chip, .header-profile-ring, .window-dots"),
+  ).toHaveCount(0);
+});
