@@ -234,3 +234,46 @@ describe("Phase 1 workspace and scoped schedule sessions", () => {
     expect(workspaceDocument(store.getState()).projects).toHaveLength(1);
   });
 });
+
+describe("project duplicate and delete", () => {
+  it("duplicates a project with a new id, after the source, keeping baselines", () => {
+    const { store, active, repository } = setup();
+    const sourceId = store.getState().activeProjectId;
+    active().captureBaseline();
+    active().updateTask("drawing", { duration: 6 });
+    const other = store.getState().createProject(settings)!;
+    const copyId = store.getState().duplicateProject(sourceId)!;
+    expect(copyId).not.toBe(sourceId);
+    expect(store.getState().projectOrder).toEqual([sourceId, copyId, other]);
+    expect(store.getState().activeProjectId).toBe(copyId);
+    const copy = active();
+    expect(copy.project.name).toMatch(/\(bản sao\)$/);
+    expect(copy.project.baselines).toHaveLength(1);
+    expect(copy.project.tasks.find((t) => t.id === "drawing")!.duration).toBe(
+      6,
+    );
+    // Editing the copy leaves the source untouched.
+    copy.updateTask("drawing", { duration: 2 });
+    const source = store.getState().projects[sourceId];
+    expect(source.project.tasks.find((t) => t.id === "drawing")!.duration).toBe(
+      6,
+    );
+    const reloaded = createWorkspaceStore(repository).getState();
+    expect(reloaded.projectOrder).toEqual([sourceId, copyId, other]);
+  });
+
+  it("deletes a project, picks a neighbour as active and refuses the last one", () => {
+    const { store, repository } = setup();
+    const first = store.getState().activeProjectId;
+    const second = store.getState().createProject(settings)!;
+    expect(store.getState().deleteProject(second)).toBe(true);
+    expect(store.getState().projectOrder).toEqual([first]);
+    expect(store.getState().activeProjectId).toBe(first);
+    expect(createWorkspaceStore(repository).getState().projectOrder).toEqual([
+      first,
+    ]);
+    expect(store.getState().deleteProject(first)).toBe(false);
+    expect(store.getState().actionError).toContain("cuối cùng");
+    expect(store.getState().projectOrder).toEqual([first]);
+  });
+});

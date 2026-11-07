@@ -165,3 +165,25 @@ test("portfolio progress updates immediately after editing the scheduling module
     page.locator(".enterprise-table tbody tr td").nth(5),
   ).not.toHaveText(before);
 });
+
+test("duplicates and deletes projects from the portfolio, surviving reload", async ({
+  page,
+}) => {
+  await page
+    .getByRole("button", { name: "Danh mục dự án", exact: true })
+    .click();
+  const rows = page.locator(".enterprise-table tbody tr");
+  await expect(rows).toHaveCount(1);
+  // The only project cannot be deleted.
+  await expect(page.getByRole("button", { name: /^Xóa / })).toBeDisabled();
+  const name = (await rows.first().locator(".project-link").innerText()).trim();
+  await page.getByRole("button", { name: `Nhân bản ${name}` }).click();
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(1)).toContainText(`${name} (bản sao)`);
+  await page.getByRole("button", { name: `Xóa ${name} (bản sao)` }).click();
+  await page.getByRole("button", { name: "Xóa vĩnh viễn" }).click();
+  await expect(rows).toHaveCount(1);
+  await expect(page.locator(".storage-state")).toContainText("Đã lưu");
+  await page.reload();
+  await expect(page.locator(".enterprise-table tbody tr")).toHaveCount(1);
+});

@@ -40,6 +40,14 @@ export interface WorkspaceState {
   switchProject: (id: string) => void;
   toggleSidebar: () => void;
   createProject: (input: ProjectSettingsInput) => string | null;
+  /**
+   * Copies a project (tasks, links, resources, baselines, progress history)
+   * under a new id, inserted right after the source, and opens it.
+   * Attachments are shared: stored files are immutable.
+   */
+  duplicateProject: (id: string) => string | null;
+  /** Removes a project permanently. The last project cannot be removed. */
+  deleteProject: (id: string) => boolean;
   updateSettings: (id: string, input: ProjectSettingsInput) => boolean;
   /** Saves pending changes now (cancels the debounce). */
   retryPersistence: () => void;
@@ -224,6 +232,57 @@ export function createWorkspaceStore(
       toggleSidebar: () =>
         set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
       clearActionError: () => set({ actionError: "" }),
+      duplicateProject: (id) => {
+        const source = get().projects[id];
+        if (!source || !Object.hasOwn(get().projects, id)) {
+          set({ actionError: "Dự án không tồn tại trong workspace này." });
+          return null;
+        }
+        const copyId = crypto.randomUUID();
+        const project = structuredClone(source.project);
+        project.id = copyId;
+        project.name = `${source.project.name} (bản sao)`.slice(0, 200);
+        const record = session({ project, baseline: null });
+        set((state) => {
+          const order = [...state.projectOrder];
+          order.splice(order.indexOf(id) + 1, 0, copyId);
+          return {
+            projects: { ...state.projects, [copyId]: record },
+            projectOrder: order,
+            activeProjectId: copyId,
+            actionError: "",
+          };
+        });
+        return copyId;
+      },
+      deleteProject: (id) => {
+        const state = get();
+        if (!Object.hasOwn(state.projects, id)) {
+          set({ actionError: "Dự án không tồn tại trong workspace này." });
+          return false;
+        }
+        if (state.projectOrder.length <= 1) {
+          set({
+            actionError:
+              "Không thể xóa dự án cuối cùng. Tạo hoặc nhập dự án khác trước.",
+          });
+          return false;
+        }
+        const index = state.projectOrder.indexOf(id);
+        const order = state.projectOrder.filter((item) => item !== id);
+        const projects = { ...state.projects };
+        delete projects[id];
+        set({
+          projects,
+          projectOrder: order,
+          activeProjectId:
+            state.activeProjectId === id
+              ? order[Math.min(index, order.length - 1)]
+              : state.activeProjectId,
+          actionError: "",
+        });
+        return true;
+      },
       createProject: (input) => {
         try {
           const fields = validatedSettings(input);

@@ -805,6 +805,17 @@ svg.lucide {
 .icon-button:hover {
   background: var(--color-slate-100);
 }
+.icon-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.icon-button.danger-icon:not(:disabled):hover {
+  color: var(--danger-text);
+  background: var(--danger-surface);
+}
+.portfolio-actions {
+  white-space: nowrap;
+}
 .field {
   display: flex;
   flex-direction: column;
