@@ -215,3 +215,21 @@ test("attachments live outside the workspace document and survive reload, export
   expect(JSON.stringify(await readStored(page))).not.toContain("base64");
   expect(errors).toEqual([]);
 });
+
+test("leveling suggestion removes overloads in one undoable step", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Nguồn lực", exact: true }).click();
+  const summary = page.locator(".module-toolbar p");
+  await expect(summary).not.toContainText(/^0 ô quá tải/);
+  await page.getByRole("button", { name: "Gợi ý giãn lịch" }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Gợi ý giãn lịch theo nguồn lực",
+  });
+  await expect(dialog.locator(".leveling-summary")).toContainText("→ 0");
+  await dialog.getByRole("button", { name: /^Áp dụng \d+ thay đổi$/ }).click();
+  await expect(summary).toContainText("0 ô quá tải");
+  await expect(
+    page.getByRole("button", { name: "Gợi ý giãn lịch" }),
+  ).toBeDisabled();
+});

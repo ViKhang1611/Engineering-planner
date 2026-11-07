@@ -39,7 +39,7 @@ npm run preview
 - **Cuộn/hover:** grid và Gantt dùng chung một hàng 36px và một viewport cuộn dọc, virtualization 5.000 tasks. Cuộn ngang riêng cho bảng và timeline.
 - **Baseline:** tạo Baseline 0/1/2…; chọn bản đối chiếu; thanh xám 4px; Variance theo ngày làm việc trên lịch baseline. Chốt mới không ghi đè bản cũ.
 - **Chi tiết task:** nhấp tên/WBS hoặc nhấp đúp hàng; checklist trọng số, Physical tự động; gán kỹ sư/thiết bị/vật tư; FAT/SAT; ngày và số biên bản; ghi chú; đính kèm tệp, tải lại và xóa tệp.
-- **Nguồn lực:** tạo/sửa/xóa danh mục, công suất; heatmap 14 ngày, mở các task được gán; ô quá tải đỏ và danh sách xung đột; không tự dời lịch. Vật tư hiển thị số lượng vào ngày bắt đầu task, không quy thành giờ.
+- **Nguồn lực:** tạo/sửa/xóa danh mục, công suất; heatmap 14 ngày, mở các task được gán; ô quá tải đỏ và danh sách xung đột; không tự dời lịch, nhưng **Gợi ý giãn lịch** xếp lại công việc theo công suất kỹ sư/thiết bị, cho xem trước danh sách việc bị dời và ngày kết thúc mới rồi áp dụng một lần (hoàn tác được). Vật tư hiển thị số lượng vào ngày bắt đầu task, không quy thành giờ.
 - **Kanban:** bốn cột, kéo thả và chọn trạng thái bằng bàn phím, tìm kiếm/lọc nguồn lực, danh sách ảo. Mọi cập nhật đi qua cùng store với Gantt.
 - **Dashboard:** KPI Physical/Duration, critical bị trễ, kỹ sư quá tải, mốc 14 ngày; S-Curve baseline/current/actual; cảnh báo lệch tiến độ; EVM PV/EV/AC/SPI/CPI/SV/CV khi có ngân sách và chi phí.
 - **Dữ liệu:** IndexedDB có transaction/revision; migration từ localStorage v1/v2; chống ghi đè giữa các tab; báo lỗi lưu; JSON/CSV/XLSX đầy đủ; backup/restore toàn workspace; Reset Demo Data cho dự án hiện tại.

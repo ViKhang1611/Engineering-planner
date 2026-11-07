@@ -4,6 +4,7 @@ import { useProjectStore } from "../../store/useProjectStore";
 import type { Resource } from "../../domain/project";
 import { TaskDetailDrawer } from "../../shared/ui/TaskDetailDrawer";
 import { Modal } from "../../shared/ui/Modal";
+import { LevelingDialog } from "./LevelingDialog";
 import {
   addCalendarDays,
   isWorkingDay,
@@ -15,6 +16,7 @@ export function ResourcesWorkspace() {
     [editor, setEditor] = useState<string | null>(null),
     [resource, setResource] = useState<Resource | null>(null),
     [expanded, setExpanded] = useState(new Set<string>()),
+    [leveling, setLeveling] = useState(false),
     [cell, setCell] = useState<{ resourceId: string; date: string } | null>(
       null,
     );
@@ -60,10 +62,16 @@ export function ResourcesWorkspace() {
         <div>
           <h2>Nguồn lực & phân bổ công việc</h2>
           <p>
-            {state.result.overloads.length} ô quá tải · Chỉ cảnh báo, không tự
-            dời lịch
+            {state.result.overloads.length} ô quá tải · Không tự dời lịch; dùng
+            Gợi ý giãn lịch để xem đề xuất
           </p>
         </div>
+        <button
+          disabled={!state.result.overloads.length}
+          onClick={() => setLeveling(true)}
+        >
+          Gợi ý giãn lịch
+        </button>
         <button onClick={() => setStart(addCalendarDays(start, -14))}>
           ← 14 ngày
         </button>
@@ -347,6 +355,20 @@ export function ResourcesWorkspace() {
           key={task.id}
           task={task}
           close={() => setEditor(null)}
+        />
+      )}
+      {leveling && (
+        <LevelingDialog
+          project={state.project}
+          apply={(changes) =>
+            state.commit((p) => {
+              for (const change of changes) {
+                const task = p.tasks.find((t) => t.id === change.taskId);
+                if (task) task.requestedStartDate = change.toStart;
+              }
+            }, `Đã giãn lịch ${changes.length} công việc theo nguồn lực`)
+          }
+          close={() => setLeveling(false)}
         />
       )}
     </div>

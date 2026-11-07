@@ -637,3 +637,29 @@ button:disabled {
   cursor: default;
   opacity: 0.55;
 }
+
+/* Leveling preview */
+.leveling-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.leveling-summary div {
+  padding: 8px 10px;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--surface-canvas);
+}
+.leveling-summary dt {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.leveling-summary dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+}
+.leveling-table-wrap {
+  max-height: 280px;
+  overflow: auto;
+}
