@@ -14,6 +14,7 @@ import {
   PanelLeftOpen,
   ShieldCheck,
   AlertTriangle,
+  RefreshCw,
   X,
 } from "lucide-react";
 import { useWorkspaceStore } from "../store/workspaceStore";
@@ -246,6 +247,34 @@ export function App() {
             {!state.persistenceBlocked && (
               <button onClick={state.retryPersistence}>Thử lưu lại</button>
             )}
+          </div>
+        )}
+        {state.syncConflict && (
+          <div className="shell-alert sync-conflict" role="alert">
+            <AlertTriangle size={16} />
+            <span>
+              {state.syncConflict.projectNames.join(", ")} vừa được lưu ở tab
+              khác trong khi bạn cũng đang sửa. Tạm dừng lưu cho đến khi bạn
+              chọn bản giữ lại.
+            </span>
+            <button onClick={() => void state.resolveSyncConflict("theirs")}>
+              Dùng bản từ tab khác
+            </button>
+            <button onClick={() => void state.resolveSyncConflict("mine")}>
+              Giữ bản của tôi
+            </button>
+          </div>
+        )}
+        {state.syncNotice && (
+          <div className="shell-alert shell-notice" role="status">
+            <RefreshCw size={15} />
+            <span>{state.syncNotice}</span>
+            <button
+              aria-label="Đóng thông báo đồng bộ"
+              onClick={state.clearSyncNotice}
+            >
+              <X size={15} />
+            </button>
           </div>
         )}
         {state.actionError && state.view !== "portfolio" && (

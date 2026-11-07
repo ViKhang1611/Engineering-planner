@@ -3,11 +3,9 @@ import { useProjectStore } from "../../store/useProjectStore";
 import {
   useWorkspaceStore,
   workspaceDocument,
+  workspaceStore,
 } from "../../store/workspaceStore";
-import {
-  persistenceMode,
-  flushPersistence,
-} from "../../infrastructure/persistence/indexedDbRepository";
+import { persistenceMode } from "../../infrastructure/persistence/indexedDbRepository";
 import {
   download,
   toRows,
@@ -218,9 +216,10 @@ export function DataWorkspace() {
             disabled={busy}
             onClick={() =>
               run(async () => {
-                await flushPersistence();
-                if (workspace.persistenceError)
-                  throw new Error(workspace.persistenceError);
+                // Writes debounced edits now, then reads the fresh status.
+                await workspace.flushPersistence();
+                const { persistenceError } = workspaceStore.getState();
+                if (persistenceError) throw new Error(persistenceError);
                 setMessage("Đã hoàn tất các giao dịch lưu dữ liệu.");
               })
             }

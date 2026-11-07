@@ -20,9 +20,22 @@ Dữ liệu Phase 1 `snapshot.baseline` được chuyển vào collection nếu 
 
 ## Lưu trữ
 
-`main.tsx` chờ `initializePersistence()` trước khi import App/store. IndexedDB `forgeplan-enterprise`, store `workspace`, key `current` chứa document và revision. Lần đầu chưa có record, adapter đọc `forgeplan.workspace.v2`, sau đó `forgeplan.project.v1` nếu cần. Khóa cũ không bị xóa.
+`main.tsx` chờ `initializePersistence()` trước khi import App/store. IndexedDB `forgeplan-enterprise` (v4): store `workspace` key `meta` chứa revision, `projectOrder`, dự án đang mở, view và sidebar; store `projects` chứa mỗi dự án một record `{project, baseline, rev}` theo id, có index `rev` (revision đã ghi record); store `attachments` chứa nội dung tệp. Dữ liệu v1/v2 (`workspace/current` = cả document) được đọc một lần và xóa ở lần lưu v3 đầu tiên. Lần đầu chưa có record, adapter đọc `forgeplan.workspace.v2`, sau đó `forgeplan.project.v1` nếu cần. Khóa localStorage cũ không bị xóa.
 
-Mỗi lần ghi là một read-write transaction: đọc revision, so với revision đã biết, rồi ghi revision+1 và document. Queue tuần tự tránh đảo thứ tự các lần commit. Tab khác đã ghi sẽ làm transaction bị abort và UI báo lỗi; xuất JSON phiên đang mở trước khi tải lại. Snapshot hover không được lưu. Khi không có IndexedDB, dùng localStorage; nếu đọc dữ liệu bị lỗi, chặn ghi tự động để không phá bản cũ.
+Store gom các thay đổi trong 400 ms (`SAVE_DELAY_MS`), không trì hoãn quá 2 giây khi người dùng sửa liên tục (`SAVE_MAX_WAIT_MS`), và ghi ngay khi tab bị ẩn, `pagehide` hoặc `beforeunload`. Trong lúc chờ, trạng thái hiển thị "Đang lưu…". Store ghi nhận id các dự án có `project`/`baseline` đổi tham chiếu; mỗi lần lưu chỉ ghi `meta` và các dự án đó. Lần lưu thất bại giữ lại danh sách dự án chưa lưu để lần sau ghi kèm. Nếu đóng tab khi đang có lỗi lưu, trình duyệt hỏi xác nhận.
+
+Mỗi lần ghi là một read-write transaction trên `workspace` + `projects`: phát lệnh đọc revision, rồi ngay lập tức các lệnh ghi `meta` (revision+1), dự án đã đổi và xóa dự án không còn trong workspace. Callback của lệnh đọc so revision và `abort()` nếu lệch, toàn bộ lệnh ghi được rollback. Không gọi `tx.commit()` vì sau đó không còn abort được. Phát mọi lệnh ngay từ đầu giúp lần lưu lúc đóng/tải lại trang không phải chờ thêm vòng sự kiện. Queue tuần tự (transaction tạo ngay khi không có lần lưu nào đang chạy) tránh đảo thứ tự các lần commit. Tab khác đã ghi sẽ làm transaction bị abort và UI báo lỗi; xuất JSON phiên đang mở trước khi tải lại. Snapshot hover không được lưu. Khi không có IndexedDB, dùng localStorage; nếu đọc dữ liệu bị lỗi, chặn ghi tự động để không phá bản cũ.
+
+### Đồng bộ giữa các tab
+
+Mở tab không ghi gì (chỉ ghi khi cần chuyển dữ liệu định dạng cũ hoặc chưa có dữ liệu), nên không làm tab khác phải tải lại. Sau mỗi lần lưu thành công, tab phát `{type: "saved", revision}` qua `BroadcastChannel("forgeplan-workspace")`. Tab nhận tin, tab vừa được hiện lại (`visibilitychange`) và tab vừa bị `WorkspaceConflictError` khi lưu đều gọi `pullIndexedWorkspace()`: đọc `meta`, lấy các dự án có `rev` lớn hơn revision của tab qua index, và các dự án đã bị gỡ khỏi `projectOrder`.
+
+Store gộp theo từng dự án:
+- Dự án chỉ tab kia đổi: thay bằng bản mới (giữ dòng đang chọn và trạng thái thu gọn, lịch sử undo của dự án đó bắt đầu lại). Thanh trên hiện "Đã cập nhật N dự án từ tab khác".
+- Dự án cả hai tab đang sửa (còn trong danh sách chưa lưu): tạm dừng lưu, hiện thanh cảnh báo với hai lựa chọn. **Dùng bản từ tab khác** bỏ thay đổi chưa lưu của dự án đó; **Giữ bản của tôi** giữ thay đổi và lần lưu tiếp theo ghi đè bản kia. Các dự án không xung đột vẫn được gộp như trên.
+- Dự án tạo mới ở tab này nhưng chưa lưu được giữ lại và nối vào cuối danh sách. Dự án đang mở và view của mỗi tab không đi theo tab khác.
+
+Sau khi gộp, `accept()` nhận revision của đĩa để lần lưu kế tiếp không bị coi là xung đột. Drawer đang mở vẫn tự phát hiện công việc đã đổi trước khi lưu.
 
 ### Tệp đính kèm (IndexedDB v2)
 

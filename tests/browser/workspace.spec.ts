@@ -167,3 +167,45 @@ test("hover follows the same task across WBS and Gantt and preserves selection",
   await expect(row).toHaveAttribute("data-hovered", "false");
   await expect(row).toHaveClass(/row-selected/);
 });
+
+test("an edit made right before reload is not lost to the save debounce", async ({
+  page,
+}) => {
+  await page.locator('[data-task-id="drawing"] .grid-cell').nth(2).dblclick();
+  const input = page.getByRole("spinbutton", { name: /Sửa duration/ });
+  await input.fill("9");
+  await input.press("Enter");
+  // Reload immediately, inside the 400 ms debounce window.
+  await page.reload();
+  await expect(
+    page.locator('[data-task-id="drawing"] .grid-cell').nth(2),
+  ).toHaveText("9d");
+});
+
+test("an edit in one tab appears in another open tab without reload", async ({
+  page,
+  context,
+}) => {
+  const other = await context.newPage();
+  await other.goto("/");
+  await expect(other.locator(".schedule-module")).toBeVisible();
+  await page.locator('[data-task-id="drawing"] .grid-cell').nth(2).dblclick();
+  const input = page.getByRole("spinbutton", { name: /Sửa duration/ });
+  await input.fill("11");
+  await input.press("Enter");
+  await expect(page.locator(".storage-state")).toContainText("Đã lưu");
+  await expect(
+    other.locator('[data-task-id="drawing"] .grid-cell').nth(2),
+  ).toHaveText("11d");
+  await expect(other.getByRole("status").filter({ hasText: "tab khác" })).toBeVisible();
+  // The other tab can keep editing: its next save is not a conflict.
+  await other.locator('[data-task-id="survey"] .grid-cell').nth(2).dblclick();
+  const otherInput = other.getByRole("spinbutton", { name: /Sửa duration/ });
+  await otherInput.fill("3");
+  await otherInput.press("Enter");
+  await expect(other.locator(".storage-state")).toContainText("Đã lưu");
+  await expect(other.locator(".shell-alert[role=alert]")).toHaveCount(0);
+  await expect(
+    page.locator('[data-task-id="survey"] .grid-cell').nth(2),
+  ).toHaveText("3d");
+});

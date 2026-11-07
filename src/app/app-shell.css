@@ -474,6 +474,17 @@
   white-space: nowrap;
 }
 
+/* Neutral notice (e.g. projects updated from another tab). */
+.shell-alert.shell-notice {
+  border-bottom-color: var(--border-default);
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+}
+
+.shell-alert.sync-conflict {
+  flex-wrap: wrap;
+}
+
 .skip-link {
   position: fixed;
   left: 12px;

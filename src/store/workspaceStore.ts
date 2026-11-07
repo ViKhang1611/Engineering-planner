@@ -19,8 +19,12 @@ import {
 } from "../modules/schedule/engine/schedulingEngine";
 import {
   browserRepository,
+  WorkspaceConflictError,
+  type RemoteChanges,
   type WorkspaceRepository,
 } from "../infrastructure/persistence/workspaceRepository";
+
+export type SyncChoice = "theirs" | "mine";
 
 export interface WorkspaceState {
   projects: Record<string, ScheduleSession>;
@@ -37,9 +41,23 @@ export interface WorkspaceState {
   toggleSidebar: () => void;
   createProject: (input: ProjectSettingsInput) => string | null;
   updateSettings: (id: string, input: ProjectSettingsInput) => boolean;
+  /** Saves pending changes now (cancels the debounce). */
   retryPersistence: () => void;
+  /** Saves pending changes now and resolves when the write has settled. */
+  flushPersistence: () => Promise<void>;
   restoreWorkspace: (raw: unknown) => boolean;
   clearActionError: () => void;
+  /** One-line notice after projects were updated from another tab. */
+  syncNotice: string;
+  clearSyncNotice: () => void;
+  /**
+   * Set when another tab saved projects this tab is also editing. Saves are
+   * paused until the user picks whose version to keep.
+   */
+  syncConflict: { projectNames: string[] } | null;
+  resolveSyncConflict: (choice: SyncChoice) => Promise<void>;
+  /** Pulls and merges what other tabs saved (also runs automatically). */
+  syncFromOtherTabs: () => Promise<void>;
 }
 
 function validatedSettings(input: ProjectSettingsInput): ProjectSettingsInput {
@@ -126,7 +144,22 @@ export function workspaceDocument(state: WorkspaceState): WorkspaceDocument {
   };
 }
 
-export function createWorkspaceStore(repository: WorkspaceRepository) {
+export interface WorkspaceStoreOptions {
+  /**
+   * Debounce for disk writes. 0 writes synchronously on every change (tests).
+   * Writes are never deferred longer than SAVE_MAX_WAIT_MS while edits continue.
+   */
+  saveDelayMs?: number;
+  /** Flush on tab hide/close and warn before closing with unsaved edits. */
+  pageLifecycle?: boolean;
+}
+export const SAVE_DELAY_MS = 400;
+export const SAVE_MAX_WAIT_MS = 2000;
+
+export function createWorkspaceStore(
+  repository: WorkspaceRepository,
+  { saveDelayMs = 0, pageLifecycle = false }: WorkspaceStoreOptions = {},
+) {
   let document: WorkspaceDocument;
   let loadError = "";
   try {
@@ -137,6 +170,17 @@ export function createWorkspaceStore(repository: WorkspaceRepository) {
     loadError = `Không đọc được dữ liệu đã lưu: ${error instanceof Error ? error.message : "Lỗi lưu trữ"}. Dữ liệu cũ được giữ nguyên; phiên tạm sẽ không ghi đè.`;
   }
   let saveSequence = 0;
+  // Persistence bookkeeping. `dirtyAll` forces a full write (first save, or a
+  // failed full write); otherwise only `dirty` projects are rewritten.
+  let dirtyAll = repository.needsFullWrite?.() ?? true;
+  const dirty = new Set<string>();
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let pendingSince = 0;
+  let flush: () => Promise<void> = () => Promise.resolve();
+  let sync: (choice?: SyncChoice) => Promise<void> = () => Promise.resolve();
+  let makeSession!: (snapshot: ProjectSnapshot) => ScheduleSession;
+  /** True while remote projects are applied: not local edits, nothing to save. */
+  let applyingRemote = false;
   const store = createStore<WorkspaceState>()((set, get) => {
     function session(snapshot: ProjectSnapshot): ScheduleSession {
       const id = snapshot.project.id;
@@ -158,6 +202,7 @@ export function createWorkspaceStore(repository: WorkspaceRepository) {
         snapshot,
       );
     }
+    makeSession = session;
     return {
       projects: Object.fromEntries(
         document.projects.map((item) => [item.project.id, session(item)]),
@@ -254,48 +299,237 @@ export function createWorkspaceStore(repository: WorkspaceRepository) {
         }
       },
       retryPersistence: () => {
-        if (get().persistenceBlocked) return;
-        const sequence = ++saveSequence;
-        set({ saving: true });
-        try {
-          const result = repository.save(workspaceDocument(get()));
-          if (result instanceof Promise)
-            result
-              .then(() => {
-                if (sequence === saveSequence)
-                  set({ persistenceError: "", saving: false });
-              })
-              .catch((error) => {
-                if (sequence === saveSequence)
-                  set({ persistenceError: error.message, saving: false });
-              });
-          else set({ persistenceError: "", saving: false });
-        } catch (error) {
-          set({
-            persistenceError:
-              error instanceof Error ? error.message : "Không lưu được dữ liệu",
-            saving: false,
-          });
-        }
+        void flush();
       },
+      flushPersistence: () => flush(),
+      syncNotice: "",
+      clearSyncNotice: () => set({ syncNotice: "" }),
+      syncConflict: null,
+      resolveSyncConflict: (choice) => sync(choice),
+      syncFromOtherTabs: () => sync(),
     };
   });
+  // A scheduled timer also covers meta-only changes (view, sidebar, order).
+  const hasPending = () => timer !== null || dirtyAll || dirty.size > 0;
+  const message = (error: unknown) =>
+    error instanceof Error ? error.message : "Không lưu được dữ liệu";
+  function schedule() {
+    if (saveDelayMs <= 0) {
+      void flush();
+      return;
+    }
+    // "Đang lưu…" covers the debounce window too, so the UI never claims a
+    // change is on disk before it is.
+    if (!store.getState().saving) store.setState({ saving: true });
+    const now = Date.now();
+    if (timer === null) pendingSince = now;
+    else clearTimeout(timer);
+    const wait = Math.min(saveDelayMs, pendingSince + SAVE_MAX_WAIT_MS - now);
+    timer = setTimeout(() => void flush(), Math.max(0, wait));
+  }
+  flush = () => {
+    if (timer !== null) {
+      clearTimeout(timer);
+      timer = null;
+    }
+    const { persistenceBlocked, syncConflict } = store.getState();
+    // While a cross-tab conflict is open, edits stay dirty and unsaved.
+    if (persistenceBlocked || syncConflict) return Promise.resolve();
+    const full = dirtyAll;
+    const ids = new Set(dirty);
+    dirtyAll = false;
+    dirty.clear();
+    const sequence = ++saveSequence;
+    const failed = (error: unknown) => {
+      // Keep the unsaved projects dirty so the next save includes them.
+      if (full) dirtyAll = true;
+      else ids.forEach((id) => dirty.add(id));
+      if (error instanceof WorkspaceConflictError && repository.pull) {
+        // Another tab saved first: merge its projects, then save again.
+        void sync();
+        return;
+      }
+      if (sequence === saveSequence)
+        store.setState({ persistenceError: message(error), saving: false });
+    };
+    const succeeded = () => {
+      if (sequence !== saveSequence) return;
+      // Newer edits are waiting on the timer; that save reports the status.
+      if (timer !== null) return;
+      // An earlier write may have failed after this one was queued.
+      if (dirtyAll || dirty.size > 0) schedule();
+      else store.setState({ persistenceError: "", saving: false });
+    };
+    if (!store.getState().saving) store.setState({ saving: true });
+    try {
+      const result = repository.save(
+        workspaceDocument(store.getState()),
+        full ? undefined : ids,
+      );
+      if (result instanceof Promise) return result.then(succeeded, failed);
+      succeeded();
+    } catch (error) {
+      failed(error);
+    }
+    return Promise.resolve();
+  };
+  /**
+   * Merges what other tabs saved, project by project. Projects only the other
+   * tab touched are replaced (undo history for them restarts). Projects both
+   * tabs edited need a choice: without one, saving pauses and the conflict is
+   * shown; "theirs" drops local edits to them, "mine" keeps them and the next
+   * save overwrites the other tab's version. This tab's active project and
+   * view never follow the other tab.
+   */
+  function apply(changes: RemoteChanges, keep: ReadonlySet<string>) {
+    const state = store.getState();
+    const projects = { ...state.projects };
+    let updated = 0;
+    for (const item of changes.projects) {
+      const id = item.project.id;
+      if (keep.has(id)) continue;
+      const previous = projects[id];
+      const next = makeSession(item);
+      projects[id] = previous
+        ? { ...next, selected: previous.selected, collapsed: previous.collapsed }
+        : next;
+      updated++;
+    }
+    let removed = 0;
+    for (const id of changes.removedIds)
+      if (!keep.has(id) && Object.hasOwn(projects, id)) {
+        delete projects[id];
+        dirty.delete(id);
+        removed++;
+      }
+    const remote = new Set(changes.projectOrder);
+    const order = [
+      ...changes.projectOrder.filter((id) => Object.hasOwn(projects, id)),
+      // Projects created here and not saved yet, or kept over a removal.
+      ...state.projectOrder.filter(
+        (id) => Object.hasOwn(projects, id) && !remote.has(id),
+      ),
+    ];
+    const sameOrder =
+      order.length === state.projectOrder.length &&
+      order.every((id, i) => id === state.projectOrder[i]);
+    const parts = [
+      updated && `cập nhật ${updated} dự án`,
+      removed && `gỡ ${removed} dự án`,
+    ].filter(Boolean);
+    applyingRemote = true;
+    try {
+      store.setState({
+        projects,
+        projectOrder: sameOrder ? state.projectOrder : order,
+        activeProjectId: Object.hasOwn(projects, state.activeProjectId)
+          ? state.activeProjectId
+          : order[0],
+        syncConflict: null,
+        syncNotice: parts.length
+          ? `Đã ${parts.join(" và ")} từ tab khác.`
+          : state.syncNotice,
+      });
+    } finally {
+      applyingRemote = false;
+    }
+  }
+  async function syncOnce(choice?: SyncChoice) {
+    const changes = await repository.pull!();
+    const state = store.getState();
+    if (!changes) {
+      if (state.syncConflict) store.setState({ syncConflict: null });
+      if (dirtyAll || dirty.size > 0) schedule();
+      return;
+    }
+    if (dirtyAll) {
+      dirtyAll = false;
+      state.projectOrder.forEach((id) => dirty.add(id));
+    }
+    const remote = [
+      ...changes.projects.map((item) => item.project.id),
+      ...changes.removedIds,
+    ];
+    const overlap = new Set(
+      remote.filter((id) => dirty.has(id) && Object.hasOwn(state.projects, id)),
+    );
+    if (overlap.size && !choice) {
+      store.setState({
+        syncConflict: {
+          projectNames: [...overlap].map(
+            (id) => state.projects[id].project.name,
+          ),
+        },
+      });
+      return;
+    }
+    if (choice === "theirs") overlap.forEach((id) => dirty.delete(id));
+    apply(changes, choice === "mine" ? overlap : new Set());
+    changes.accept();
+    if (dirty.size > 0) schedule();
+    else if (state.saving && timer === null)
+      store.setState({ saving: false, persistenceError: "" });
+  }
+  let syncChain: Promise<void> = Promise.resolve();
+  sync = (choice) => {
+    if (!repository.pull || store.getState().persistenceBlocked)
+      return Promise.resolve();
+    // Serialized: overlapping triggers (broadcast, focus, conflict) each pull
+    // in turn; later ones usually find nothing new.
+    syncChain = syncChain.then(() =>
+      syncOnce(choice).catch((error) => {
+        store.setState({
+          persistenceError: `Không đồng bộ được với tab khác: ${message(error)}`,
+        });
+      }),
+    );
+    return syncChain;
+  };
   store.subscribe((state, previous) => {
-    if (state.persistenceBlocked) return;
+    if (state.persistenceBlocked || applyingRemote) return;
     // Selection, hover and undo stacks never trigger disk writes.
-    const changed =
+    let changed =
       state.activeProjectId !== previous.activeProjectId ||
       state.view !== previous.view ||
       state.sidebarCollapsed !== previous.sidebarCollapsed ||
-      state.projectOrder !== previous.projectOrder ||
-      state.projectOrder.some(
-        (id) =>
-          state.projects[id].project !== previous.projects[id]?.project ||
-          state.projects[id].baseline !== previous.projects[id]?.baseline,
-      );
-    if (changed) state.retryPersistence();
+      state.projectOrder !== previous.projectOrder;
+    for (const id of state.projectOrder)
+      if (
+        state.projects[id].project !== previous.projects[id]?.project ||
+        state.projects[id].baseline !== previous.projects[id]?.baseline
+      ) {
+        dirty.add(id);
+        changed = true;
+      }
+    if (changed) schedule();
   });
-  if (!loadError) store.getState().retryPersistence();
+  // Write at start-up only for migrations / first run; data loaded from the
+  // current layout is normalized again on every load, so it stays valid.
+  if (!loadError && dirtyAll) void flush();
+  repository.subscribe?.(() => void sync());
+  if (
+    pageLifecycle &&
+    typeof window !== "undefined" &&
+    typeof window.addEventListener === "function"
+  ) {
+    // Write immediately when the tab may be discarded; IndexedDB usually
+    // completes a small transaction before the page is torn down.
+    window.addEventListener("pagehide", () => void flush());
+    window.document.addEventListener("visibilitychange", () => {
+      if (window.document.visibilityState === "hidden") void flush();
+      // Catch up on saves whose broadcast this tab may have missed.
+      else void sync();
+    });
+    window.addEventListener("beforeunload", (event) => {
+      if (!hasPending()) return;
+      void flush();
+      if (store.getState().persistenceError) {
+        // Edits exist that the last attempt could not save: ask first.
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    });
+  }
   return store;
 }
 
@@ -312,7 +546,10 @@ function defaultDocument(): WorkspaceDocument {
   };
 }
 
-export const workspaceStore = createWorkspaceStore(browserRepository());
+export const workspaceStore = createWorkspaceStore(browserRepository(), {
+  saveDelayMs: SAVE_DELAY_MS,
+  pageLifecycle: true,
+});
 export function useWorkspaceStore<T>(
   selector: (state: WorkspaceState) => T,
 ): T {

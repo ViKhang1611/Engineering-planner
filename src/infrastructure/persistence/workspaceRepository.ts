@@ -1,9 +1,14 @@
 import {
   hasIndexedDatabase,
+  indexedNeedsFullWrite,
   loadIndexedWorkspace,
+  pullIndexedWorkspace,
   saveIndexedWorkspace,
+  subscribeIndexedWorkspace,
 } from "./indexedDbRepository";
 import type { WorkspaceDocument } from "../../domain/workspace";
+import type { RemoteChanges } from "./types";
+export { WorkspaceConflictError, type RemoteChanges } from "./types";
 
 export const WORKSPACE_STORAGE_KEY = "forgeplan.workspace.v2";
 export const LEGACY_STORAGE_KEY = "forgeplan.project.v1";
@@ -11,7 +16,25 @@ export const LEGACY_STORAGE_KEY = "forgeplan.project.v1";
 /** Storage port: synchronous fallback and transactional IndexedDB adapter. */
 export interface WorkspaceRepository {
   load(): unknown | null;
-  save(document: WorkspaceDocument): void | Promise<void>;
+  /**
+   * `dirty` lists the project ids whose content changed since the last
+   * successful save; omitted means "write everything". Adapters that cannot
+   * write partially (localStorage) ignore it.
+   */
+  save(
+    document: WorkspaceDocument,
+    dirty?: ReadonlySet<string>,
+  ): void | Promise<void>;
+  /**
+   * Whether the loaded data must be written back in full at start-up
+   * (migration or nothing saved yet). Default: true. When false, opening a tab
+   * writes nothing, so other tabs are not made to reload.
+   */
+  needsFullWrite?(): boolean;
+  /** Reads what other tabs saved since our revision (multi-tab adapters only). */
+  pull?(): Promise<RemoteChanges | null>;
+  /** Calls `listener` when another tab saved. Returns an unsubscribe function. */
+  subscribe?(listener: () => void): () => void;
 }
 
 export class LocalStorageWorkspaceRepository implements WorkspaceRepository {
@@ -43,9 +66,15 @@ export function browserRepository(): WorkspaceRepository {
       hasIndexedDatabase()
         ? loadIndexedWorkspace()
         : new LocalStorageWorkspaceRepository(window.localStorage).load(),
-    save: (document) =>
+    needsFullWrite: () =>
+      hasIndexedDatabase() ? indexedNeedsFullWrite() : true,
+    pull: () =>
+      hasIndexedDatabase() ? pullIndexedWorkspace() : Promise.resolve(null),
+    subscribe: (listener) =>
+      hasIndexedDatabase() ? subscribeIndexedWorkspace(listener) : () => {},
+    save: (document, dirty) =>
       hasIndexedDatabase()
-        ? saveIndexedWorkspace(document)
+        ? saveIndexedWorkspace(document, dirty)
         : new LocalStorageWorkspaceRepository(window.localStorage).save(
             document,
           ),

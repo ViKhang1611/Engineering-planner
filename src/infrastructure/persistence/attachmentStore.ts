@@ -199,14 +199,19 @@ export async function externalizeDocument<T>(document: T): Promise<T> {
   if (!database) return document;
   const projects = (document as { projects?: unknown } | null)?.projects;
   if (!Array.isArray(projects)) return document;
+  let changed = false;
   const next = await Promise.all(
-    projects.map(async (item) =>
-      item && typeof item === "object" && "project" in item
-        ? { ...item, project: await externalizeAttachments(item.project) }
-        : item,
-    ),
+    projects.map(async (item) => {
+      if (!item || typeof item !== "object" || !("project" in item))
+        return item;
+      const project = await externalizeAttachments(item.project);
+      if (project === item.project) return item;
+      changed = true;
+      return { ...item, project };
+    }),
   );
-  return { ...document, projects: next };
+  // Same reference when nothing moved: callers use identity to detect migration.
+  return changed ? { ...document, projects: next } : document;
 }
 
 /**

@@ -55,7 +55,7 @@ npm run preview
 7. EVM dùng ngân sách và chi phí task lá nhập trong Drawer, đơn vị VND. Khi chưa chốt baseline, PV dựa trên lịch hiện tại. SV trong EVM là tiền (EV−PV); Variance trong WBS là ngày.
 8. Tệp đính kèm tối đa 5 MB/tệp và 25 MB/dự án. Nội dung tệp lưu riêng trong IndexedDB, không nằm trong dữ liệu dự án; các file xuất JSON/CSV/XLSX vẫn mang theo tệp. Tệp nhập tối đa 50 MB. Dữ liệu dự án gồm tối đa 5.000 tasks và 50.000 dependencies. Các tệp nhập lỗi bị từ chối trước khi ghi.
 9. JSON là định dạng backup dễ đọc. CSV dùng các bản ghi có kiểu và payload JSON để giữ cây, liên kết, checklist, baseline, tài liệu; đây không phải CSV phẳng của MS Project. Excel có `WBS Report` để đọc, `Project Data` để round-trip. Chỉnh `WBS Report` không thay đổi `Project Data`.
-10. Đây là bản **standalone**, không có tài khoản, phân quyền hay đồng bộ nhiều người qua máy chủ. Có schema PostgreSQL và hợp đồng REST trong `docs/backend` để triển khai backend riêng; không tuyên bố backend đã chạy. IndexedDB bảo vệ xung đột giữa các tab bằng revision, không gộp thay đổi đồng thời.
+10. Đây là bản **standalone**, không có tài khoản, phân quyền hay đồng bộ nhiều người qua máy chủ. Có schema PostgreSQL và hợp đồng REST trong `docs/backend` để triển khai backend riêng; không tuyên bố backend đã chạy. Các tab cùng trình duyệt tự đồng bộ: thay đổi ở tab này hiện ngay ở tab kia, sửa đồng thời các dự án khác nhau được gộp tự động; nếu hai tab cùng sửa một dự án, ứng dụng tạm dừng lưu và hỏi giữ bản nào.
 
 ## Kiểm tra
 
