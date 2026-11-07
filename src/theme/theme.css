@@ -1,5 +1,5 @@
 body {
-  background: var(--surface-canvas);
+  background: var(--wallpaper-bg, var(--surface-canvas));
   color: var(--text-primary);
 }
 .bg-white {
@@ -32,6 +32,14 @@ body {
   background: var(--surface-base);
   color: var(--text-primary);
 }
+
+.theme-controls-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .theme-switcher {
   display: flex;
   align-items: center;
@@ -40,43 +48,75 @@ body {
   color: var(--text-muted);
   flex-shrink: 0;
 }
+
 .theme-switcher select {
-  width: 148px;
+  width: 142px;
   min-width: 0;
-  max-width: 148px;
+  max-width: 142px;
   background: var(--surface-base);
   color: var(--text-primary);
-  border: 1px solid var(--border-default);
-  padding: 6px;
-  border-radius: 5px;
+  border: 1px solid var(--glass-border, var(--border-default));
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 11px;
 }
+
+.custom-ui-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #ec48991f, #6366f124);
+  color: var(--accent);
+  border: 1px solid var(--glass-border, var(--border-default));
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+
+.custom-ui-trigger:hover,
+.custom-ui-trigger.active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
 .shell-context {
   min-width: 0;
   flex: 1;
 }
+
 .shell-context select {
   min-width: 100px;
   width: 100%;
-  max-width: 360px;
+  max-width: 340px;
 }
+
 .shell-header .contract-code {
   display: none;
 }
+
 .export-plan-menu {
   position: relative;
   flex-shrink: 0;
 }
+
 .export-plan-menu > button {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 7px 9px;
-  border: 1px solid var(--border-default);
-  border-radius: 5px;
-  background: var(--accent);
+  padding: 6px 13px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb, var(--accent));
   color: var(--on-accent);
-  font-size: 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
 }
+
 .export-dropdown {
   position: absolute;
   right: 0;
@@ -84,11 +124,12 @@ body {
   width: 245px;
   background: var(--surface-base);
   border: 1px solid var(--border-default);
-  border-radius: 6px;
-  box-shadow: 0 8px 25px #0002;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
   z-index: 90;
-  padding: 5px;
+  padding: 6px;
 }
+
 .export-dropdown button {
   width: 100%;
   text-align: left;
@@ -96,25 +137,29 @@ body {
   background: transparent;
   color: var(--text-primary);
   border: 0;
-  border-radius: 4px;
+  border-radius: 8px;
 }
+
 .export-dropdown button:hover,
 .export-dropdown button:focus-visible {
   background: var(--planner-hover);
 }
+
 .export-form label {
   display: flex;
   flex-direction: column;
   gap: 5px;
   margin-bottom: 14px;
 }
+
 .export-form select {
   padding: 8px;
   border: 1px solid var(--border-default);
   background: var(--surface-base);
   color: var(--text-primary);
-  border-radius: 4px;
+  border-radius: 8px;
 }
+
 .export-status {
   padding: 10px;
   border: 1px solid var(--border-default);
@@ -122,9 +167,206 @@ body {
   margin: 12px 0;
   font-size: 12px;
   line-height: 1.6;
+  border-radius: 8px;
 }
+
+/* Floating Moon & Customizer Dock (Bottom-right like the reference image) */
+.floating-theme-dock {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 65;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The drawer and modals render inside .shell-main, whose backdrop-filter
+   creates its own stacking context, so z-index cannot lift them above this
+   fixed dock. Hide the dock while they are open so it never covers their
+   footer actions (e.g. "Lưu thay đổi"). */
+body:has(.task-drawer) .floating-theme-dock,
+body:has([role="dialog"]) .floating-theme-dock {
+  display: none;
+}
+
+.dock-moon-btn,
+.dock-Customize-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--glass-panel-bg, var(--surface-base));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border, var(--border-default));
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+  transition:
+    transform 0.16s,
+    box-shadow 0.16s;
+}
+
+.dock-moon-btn:hover,
+.dock-Customize-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.25);
+}
+
+.appearance-studio-popover {
+  position: fixed;
+  right: 18px;
+  bottom: 66px;
+  width: 320px;
+  max-width: calc(100vw - 36px);
+  background: var(--surface-base);
+  border: 1px solid var(--glass-border, var(--border-default));
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+  z-index: 80;
+  font-size: 12px;
+}
+
+.studio-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.studio-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--accent);
+}
+
+.studio-section {
+  margin-bottom: 14px;
+}
+
+.studio-label {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.wallpaper-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+
+.wallpaper-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 10px;
+  border: 1px solid var(--border-default);
+  background: var(--surface-canvas);
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.wallpaper-swatch i {
+  width: 100%;
+  height: 24px;
+  border-radius: 6px;
+  display: block;
+}
+
+.wallpaper-swatch.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--planner-selection);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.glass-mode-pills,
+.preset-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.glass-mode-pills button,
+.preset-pills button {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border-default);
+  background: var(--surface-canvas);
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.glass-mode-pills button.active,
+.preset-pills button.active {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.preset-pills button i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.studio-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.studio-switch {
+  width: 34px;
+  height: 19px;
+  border-radius: 999px;
+  background: var(--border-default);
+  position: relative;
+  padding: 0;
+  border: 0;
+}
+
+.studio-switch i {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.15s;
+}
+
+.studio-switch.on {
+  background: #2563eb;
+}
+
+.studio-switch.on i {
+  transform: translateX(15px);
+}
+
 @media (max-width: 1150px) {
-  .shell-header .storage-state {
+  .shell-header .storage-state,
+  .custom-ui-trigger span {
     display: none;
   }
   .shell-context h1 {

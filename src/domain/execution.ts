@@ -137,18 +137,23 @@ export function validateExtensions(p: ProjectInput) {
         typeof a.type !== "string" ||
         !Number.isSafeInteger(a.size) ||
         a.size < 0 ||
-        typeof a.data !== "string"
+        (a.data !== undefined && typeof a.data !== "string")
       )
         throw new Error("Tệp đính kèm không hợp lệ");
-      const match = a.data.match(/^data:[^,]*;base64,([A-Za-z0-9+/]*={0,2})$/);
-      if (!match || match[1].length % 4 !== 0)
-        throw new Error("Mã hóa tệp không hợp lệ");
-      const bytes =
-        (match[1].length / 4) * 3 -
-        (match[1].endsWith("==") ? 2 : match[1].endsWith("=") ? 1 : 0);
-      if (bytes !== a.size || bytes > 5 * 1024 * 1024)
-        throw new Error("Kích thước tệp không hợp lệ hoặc vượt 5 MB");
-      attachmentBytes += bytes;
+      // Stored attachments carry metadata only; inline data must match its size.
+      if (a.data !== undefined) {
+        const match = a.data.match(
+          /^data:[^,]*;base64,([A-Za-z0-9+/]*={0,2})$/,
+        );
+        if (!match || match[1].length % 4 !== 0)
+          throw new Error("Mã hóa tệp không hợp lệ");
+        const bytes =
+          (match[1].length / 4) * 3 -
+          (match[1].endsWith("==") ? 2 : match[1].endsWith("=") ? 1 : 0);
+        if (bytes !== a.size) throw new Error("Kích thước tệp không hợp lệ");
+      }
+      if (a.size > 5 * 1024 * 1024) throw new Error("Tệp đính kèm vượt 5 MB");
+      attachmentBytes += a.size;
     }
     if (t.notes !== undefined && typeof t.notes !== "string")
       throw new Error("Ghi chú không hợp lệ");

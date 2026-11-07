@@ -3,7 +3,8 @@ export async function readStored(page: Page) {
   return page.evaluate(
     () =>
       new Promise<any>((resolve, reject) => {
-        const request = indexedDB.open("forgeplan-enterprise", 1);
+        // No version: open whatever schema the app created (v2+).
+        const request = indexedDB.open("forgeplan-enterprise");
         request.onsuccess = () => {
           const db = request.result;
           const read = db

@@ -1,4 +1,4 @@
-import { ThemeSwitcher } from "../theme/ThemeProvider";
+import { FloatingThemeDock, ThemeSwitcher } from "../theme/ThemeProvider";
 import { ExportPlanMenu } from "../modules/plan-export/ExportPlanMenu";
 import { ResourcesWorkspace } from "../modules/resources/ResourcesWorkspace";
 import { ExecutionWorkspace } from "../modules/execution/ExecutionWorkspace";
@@ -6,7 +6,9 @@ import { DashboardWorkspace } from "../modules/dashboard/DashboardWorkspace";
 import { DataWorkspace } from "../modules/data/DataWorkspace";
 import { Component, lazy, Suspense, type ReactNode } from "react";
 import {
+  Bell,
   ChevronRight,
+  Cloud,
   Layers,
   PanelLeftClose,
   PanelLeftOpen,
@@ -59,6 +61,11 @@ export function App() {
   const active = state.projects[state.activeProjectId];
   const module = moduleRegistry.find((item) => item.id === state.view)!;
   const ModuleIcon = module.icon;
+  const criticalCount = active.result.tasks.filter(
+    (t) => !t.isSummary && t.isCritical && t.physicalPct < 100,
+  ).length;
+  const overloadCount = active.result.overloads.length;
+
   return (
     <div
       style={layoutVariables}
@@ -69,12 +76,17 @@ export function App() {
       </a>
       <aside className="shell-sidebar" aria-label="Điều hướng chính">
         <div className="shell-brand">
+          <div className="window-dots" aria-hidden="true">
+            <span className="dot-close" />
+            <span className="dot-min" />
+            <span className="dot-max" />
+          </div>
           <span className="brand-mark">
-            <Layers size={20} />
+            <Layers size={18} />
           </span>
           <span className="sidebar-text">
             <strong>ForgePlan</strong>
-            <small>ENGINEERING WORKSPACE</small>
+            <small>CREATIVE WORKSPACE</small>
           </span>
         </div>
         <button
@@ -97,23 +109,51 @@ export function App() {
           <span className="sidebar-text">Thu gọn điều hướng</span>
         </button>
         <nav>
-          {moduleRegistry.map(({ id, label, icon: Icon }, index) => (
-            <div key={id}>
-              {index === 1 && (
-                <div className="nav-section sidebar-text">KHÔNG GIAN DỰ ÁN</div>
-              )}
-              <button
-                className={`nav-item ${state.view === id ? "active" : ""}`}
-                aria-label={label}
-                aria-current={state.view === id ? "page" : undefined}
-                title={label}
-                onClick={() => state.navigate(id)}
-              >
-                <Icon size={17} />
-                <span className="sidebar-text">{label}</span>
-              </button>
-            </div>
-          ))}
+          {moduleRegistry.map(({ id, label, icon: Icon }, index) => {
+            const badge =
+              id === "portfolio"
+                ? state.projectOrder.length
+                : id === "resources" && overloadCount > 0
+                  ? overloadCount
+                  : id === "dashboard" && criticalCount > 0
+                    ? criticalCount
+                    : null;
+            return (
+              <div key={id}>
+                {index === 0 && (
+                  <div className="nav-section sidebar-text">DANH MỤC</div>
+                )}
+                {index === 1 && (
+                  <div className="nav-section sidebar-text">
+                    KHÔNG GIAN DỰ ÁN
+                  </div>
+                )}
+                {index === 4 && (
+                  <div className="nav-section sidebar-text">
+                    ĐIỀU HÀNH & HỆ THỐNG
+                  </div>
+                )}
+                <button
+                  className={`nav-item ${state.view === id ? "active" : ""}`}
+                  aria-label={label}
+                  aria-current={state.view === id ? "page" : undefined}
+                  title={label}
+                  onClick={() => state.navigate(id)}
+                >
+                  <Icon size={17} />
+                  <span className="sidebar-text">{label}</span>
+                  {badge !== null && (
+                    <span
+                      className="nav-pill-badge sidebar-text"
+                      aria-hidden="true"
+                    >
+                      {badge}
+                    </span>
+                  )}
+                </button>
+              </div>
+            );
+          })}
         </nav>
         <div className="sidebar-bottom">
           <div className="avatar">PM</div>
@@ -162,6 +202,16 @@ export function App() {
                 ? "Đang lưu…"
                 : "Đã lưu trên thiết bị"}
           </span>
+          <div className="header-status-cluster" aria-hidden="true">
+            <span className="header-bell-chip" title="Việc đường găng cần chú ý">
+              <Bell size={15} />
+              {criticalCount > 0 && <i>{criticalCount}</i>}
+            </span>
+            <span className="header-cloud-chip">
+              <Cloud size={15} />
+            </span>
+            <span className="header-profile-ring">PM</span>
+          </div>
         </header>
         <div className="shell-viewbar">
           <div className="workspace-tabs" aria-label="Chế độ xem dự án">
@@ -238,6 +288,7 @@ export function App() {
           </WorkspaceBoundary>
         </main>
       </div>
+      <FloatingThemeDock />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import {
   calendarDaysBetween,
 } from "../schedule/engine/schedulingEngine";
 import { TaskDetailDrawer } from "../../shared/ui/TaskDetailDrawer";
+import { CreativeHeroBanner } from "../../shared/ui/CreativeHeroBanner";
 const number = (n: number) =>
   n.toLocaleString("vi-VN", { maximumFractionDigits: 1 });
 export function DashboardWorkspace() {
@@ -137,6 +138,7 @@ export function DashboardWorkspace() {
           </p>
         </div>
         <button
+          className="pill-action-button"
           onClick={() =>
             state.commit(() => {}, "Đã ghi nhận tiến độ tại ngày báo cáo")
           }
@@ -144,14 +146,32 @@ export function DashboardWorkspace() {
           Ghi nhận tiến độ hôm báo cáo
         </button>
       </div>
+      <CreativeHeroBanner
+        badgeCode="FP"
+        title={project.name}
+        description={`Tiến độ khối lượng đạt ${number(overallProgress(result.tasks))}% so với kế hoạch ${number(overallProgress(result.tasks, true))}% tại ngày báo cáo ${project.statusDate}. Theo dõi đường cong S-Curve, EVM và các mốc nghiệm thu quan trọng.`}
+        primaryActionLabel="Chốt điểm tiến độ ngay"
+        onPrimaryAction={() =>
+          state.commit(() => {}, "Đã ghi nhận tiến độ tại ngày báo cáo")
+        }
+        secondaryMeta={`${leaves.length} công việc lá · ${milestones.length} mốc trong 14 ngày`}
+      />
       <div className="kpi-grid">
         {[
-          ["Physical thực tế", `${number(overallProgress(result.tasks))}%`],
           [
-            "Duration kế hoạch",
-            `${number(overallProgress(result.tasks, true))}%`,
+            "Ph",
+            "Physical thực tế",
+            `${number(overallProgress(result.tasks))}%`,
+            "kpi-tile-pink",
           ],
           [
+            "Du",
+            "Duration kế hoạch",
+            `${number(overallProgress(result.tasks, true))}%`,
+            "kpi-tile-indigo",
+          ],
+          [
+            "Cp",
             "Đường găng bị trễ",
             leaves.filter(
               (t) =>
@@ -159,12 +179,18 @@ export function DashboardWorkspace() {
                 t.endDate < project.statusDate &&
                 t.physicalPct < 100,
             ).length,
+            "kpi-tile-rose",
           ],
-          ["Kỹ sư quá tải", overloaded.size],
-          ["Mốc sắp tới · 14 ngày", milestones.length],
-        ].map(([label, value]) => (
+          ["Rs", "Kỹ sư quá tải", overloaded.size, "kpi-tile-amber"],
+          ["Ms", "Mốc sắp tới · 14 ngày", milestones.length, "kpi-tile-emerald"],
+        ].map(([code, label, value, tone]) => (
           <div key={label} className="kpi">
-            <small>{label}</small>
+            <div className="kpi-head">
+              <span className={`kpi-app-badge ${tone}`} aria-hidden="true">
+                {code}
+              </span>
+              <small>{label}</small>
+            </div>
             <strong>{value}</strong>
           </div>
         ))}

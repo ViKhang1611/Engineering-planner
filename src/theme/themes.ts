@@ -1,4 +1,105 @@
 export type ThemeId = "slate" | "classic" | "dark" | "blueprint" | "contrast";
+export type WallpaperId =
+  | "aurora"
+  | "sunset"
+  | "ocean"
+  | "twilight"
+  | "meadow"
+  | "minimal";
+export type GlassIntensity = "crystal" | "frosted" | "solid";
+
+export interface WallpaperPreset {
+  id: WallpaperId;
+  name: string;
+  preview: string;
+  lightBg: string;
+  darkBg: string;
+  bannerGradient: string;
+}
+
+export const wallpapers: WallpaperPreset[] = [
+  {
+    id: "aurora",
+    name: "Aurora Pastel (Mẫu Creative)",
+    preview: "linear-gradient(135deg, #8b93d6 0%, #d8c8f0 48%, #f69db5 100%)",
+    lightBg:
+      "radial-gradient(circle at 8% 12%, #8e94d9 0%, transparent 45%), radial-gradient(circle at 88% 16%, #c6bef2 0%, transparent 48%), radial-gradient(circle at 14% 88%, #f594b3 0%, transparent 52%), radial-gradient(circle at 88% 85%, #f79ca8 0%, transparent 48%), linear-gradient(135deg, #9fa5e4 0%, #dcd6f7 48%, #f7b2c4 100%)",
+    darkBg:
+      "radial-gradient(circle at 12% 15%, #312e81 0%, transparent 48%), radial-gradient(circle at 85% 20%, #1e1b4b 0%, transparent 50%), radial-gradient(circle at 18% 85%, #831843 0%, transparent 52%), radial-gradient(circle at 88% 85%, #4c1d95 0%, transparent 48%), linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #3b0764 100%)",
+    bannerGradient:
+      "linear-gradient(112deg, #db2777 0%, #f43f5e 34%, #fb923c 70%, #facc15 100%)",
+  },
+  {
+    id: "sunset",
+    name: "Sunset Coral",
+    preview: "linear-gradient(135deg, #f43f5e 0%, #fb923c 50%, #fde047 100%)",
+    lightBg:
+      "radial-gradient(circle at 10% 15%, #fda4af 0%, transparent 48%), radial-gradient(circle at 88% 15%, #fed7aa 0%, transparent 50%), radial-gradient(circle at 20% 85%, #f472b6 0%, transparent 50%), radial-gradient(circle at 85% 85%, #fb923c 0%, transparent 48%), linear-gradient(135deg, #fecdd3 0%, #ffedd5 50%, #fde68a 100%)",
+    darkBg:
+      "radial-gradient(circle at 15% 15%, #7f1d1d 0%, transparent 50%), radial-gradient(circle at 85% 85%, #7c2d12 0%, transparent 50%), linear-gradient(135deg, #1c1917 0%, #450a0a 52%, #431407 100%)",
+    bannerGradient:
+      "linear-gradient(112deg, #7c3aed 0%, #db2777 45%, #fb923c 100%)",
+  },
+  {
+    id: "ocean",
+    name: "Ocean Breeze",
+    preview: "linear-gradient(135deg, #38bdf8 0%, #818cf8 52%, #c084fc 100%)",
+    lightBg:
+      "radial-gradient(circle at 10% 18%, #7dd3fc 0%, transparent 48%), radial-gradient(circle at 88% 15%, #c7d2fe 0%, transparent 50%), radial-gradient(circle at 16% 86%, #a5b4fc 0%, transparent 52%), radial-gradient(circle at 86% 84%, #f0abfc 0%, transparent 48%), linear-gradient(135deg, #bae6fd 0%, #e0e7ff 50%, #f3e8ff 100%)",
+    darkBg:
+      "radial-gradient(circle at 12% 18%, #0c4a6e 0%, transparent 50%), radial-gradient(circle at 85% 82%, #312e81 0%, transparent 50%), linear-gradient(135deg, #082f49 0%, #0f172a 52%, #1e1b4b 100%)",
+    bannerGradient:
+      "linear-gradient(112deg, #0284c7 0%, #4f46e5 48%, #db2777 100%)",
+  },
+  {
+    id: "twilight",
+    name: "Cyber Lavender",
+    preview: "linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)",
+    lightBg:
+      "radial-gradient(circle at 12% 15%, #a5b4fc 0%, transparent 48%), radial-gradient(circle at 88% 18%, #e9d5ff 0%, transparent 50%), radial-gradient(circle at 18% 85%, #f9a8d4 0%, transparent 50%), linear-gradient(135deg, #c7d2fe 0%, #f3e8ff 50%, #fce7f3 100%)",
+    darkBg:
+      "radial-gradient(circle at 15% 20%, #3b0764 0%, transparent 50%), radial-gradient(circle at 85% 80%, #1e1b4b 0%, transparent 50%), linear-gradient(135deg, #090d16 0%, #1e1b4b 50%, #4a044e 100%)",
+    bannerGradient:
+      "linear-gradient(112deg, #4f46e5 0%, #9333ea 45%, #ec4899 80%, #f97316 100%)",
+  },
+  {
+    id: "meadow",
+    name: "Mint & Peach",
+    preview: "linear-gradient(135deg, #6ee7b7 0%, #bfdbfe 50%, #fbcfe8 100%)",
+    lightBg:
+      "radial-gradient(circle at 12% 15%, #a7f3d0 0%, transparent 48%), radial-gradient(circle at 88% 18%, #bfdbfe 0%, transparent 50%), radial-gradient(circle at 20% 85%, #fbcfe8 0%, transparent 50%), linear-gradient(135deg, #d1fae5 0%, #e0f2fe 50%, #fce7f3 100%)",
+    darkBg:
+      "radial-gradient(circle at 15% 20%, #064e3b 0%, transparent 50%), radial-gradient(circle at 85% 80%, #1e3a8a 0%, transparent 50%), linear-gradient(135deg, #022c22 0%, #0f172a 55%, #1e1b4b 100%)",
+    bannerGradient:
+      "linear-gradient(112deg, #059669 0%, #0ea5e9 52%, #6366f1 100%)",
+  },
+  {
+    id: "minimal",
+    name: "Studio Pearl",
+    preview: "linear-gradient(135deg, #cbd5e1 0%, #e2e8f0 50%, #f8fafc 100%)",
+    lightBg:
+      "radial-gradient(circle at 15% 15%, #dbeafe 0%, transparent 50%), radial-gradient(circle at 85% 85%, #fae8ff 0%, transparent 50%), linear-gradient(135deg, #e2e8f0 0%, #f1f5f9 50%, #e0e7ff 100%)",
+    darkBg:
+      "linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e293b 100%)",
+    bannerGradient:
+      "linear-gradient(112deg, #2563eb 0%, #7c3aed 50%, #db2777 100%)",
+  },
+];
+
+export interface CustomAppearance {
+  wallpaper: WallpaperId;
+  glass: GlassIntensity;
+  showHeroBanner: boolean;
+}
+
+export const APPEARANCE_STORAGE_KEY = "forgeplan.appearance.v1";
+
+export const defaultAppearance: CustomAppearance = {
+  wallpaper: "aurora",
+  glass: "frosted",
+  showHeroBanner: true,
+};
+
 export interface ThemePreset {
   id: ThemeId;
   name: string;

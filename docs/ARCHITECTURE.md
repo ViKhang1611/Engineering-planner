@@ -24,6 +24,15 @@ Dữ liệu Phase 1 `snapshot.baseline` được chuyển vào collection nếu 
 
 Mỗi lần ghi là một read-write transaction: đọc revision, so với revision đã biết, rồi ghi revision+1 và document. Queue tuần tự tránh đảo thứ tự các lần commit. Tab khác đã ghi sẽ làm transaction bị abort và UI báo lỗi; xuất JSON phiên đang mở trước khi tải lại. Snapshot hover không được lưu. Khi không có IndexedDB, dùng localStorage; nếu đọc dữ liệu bị lỗi, chặn ghi tự động để không phá bản cũ.
 
+### Tệp đính kèm (IndexedDB v2)
+
+Nội dung tệp nằm trong object store `attachments` (key = id tệp, value = `{bytes: ArrayBuffer, type, createdAt}`). Task chỉ giữ metadata `{id, name, type, size}`, nên commit, undo và mỗi lần ghi workspace không sao chép nội dung tệp. Tệp là bất biến: một id luôn ứng với cùng nội dung, nhiều dự án hoặc snapshot undo có thể dùng chung.
+
+- **Migration:** khi khởi động, `initializePersistence()` chuyển các `data` base64 cũ (v1 hoặc localStorage) sang store riêng rồi bỏ khỏi document; lần lưu đầu ghi document đã gọn. Lỗi chuyển thì giữ nguyên bản inline. Dữ liệu sai cỡ hoặc sai mã hóa vẫn để inline để validation từ chối.
+- **Xóa và dọn rác:** xóa tệp trong Drawer chỉ bỏ metadata, nên undo vẫn mở được tệp. Khi khởi động, tệp không còn được document nào tham chiếu và cũ hơn 24 giờ sẽ bị xóa (`deleteUnreferencedAttachments`).
+- **Xuất/nhập:** JSON, CSV, XLSX và bản sao workspace nhúng lại `data` (`inlineAttachments`/`inlineDocument`) để mang sang máy khác; tệp không còn trên thiết bị chỉ giữ tên và UI báo lại. Khi nhập/khôi phục, `externalizeAttachments`/`externalizeDocument` tách tệp vào store trước khi thay dữ liệu.
+- **Fallback localStorage:** không có IndexedDB thì tệp vẫn lưu inline như phiên bản trước.
+
 Trạng thái lưu dùng sequence để một giao dịch cũ hoàn thành không làm hiển thị “Đã lưu” trong khi còn giao dịch mới. Dữ liệu chỉ thật sự durable sau khi transaction hoàn thành. Thiết bị/trình duyệt vẫn có thể xóa dữ liệu khi người dùng xóa site data; xuất backup là cơ chế di chuyển và phục hồi.
 
 ## Hiệu năng

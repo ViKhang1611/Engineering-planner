@@ -1,5 +1,13 @@
 import type { WorkspaceDocument } from "../../domain/workspace";
 import { LocalStorageWorkspaceRepository } from "./workspaceRepository";
+import {
+  ATTACHMENT_STORE,
+  bindAttachmentDatabase,
+  deleteUnreferencedAttachments,
+  externalizeDocument,
+  referencedAttachmentIds,
+} from "./attachmentStore";
+const DATABASE_VERSION = 2;
 let database: IDBDatabase | null = null;
 let initial: unknown = null;
 let loadFailure: Error | null = null;
@@ -10,9 +18,15 @@ export async function initializePersistence() {
   if (!("indexedDB" in window)) return;
   try {
     database = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open("forgeplan-enterprise", 1);
-      request.onupgradeneeded = () =>
-        request.result.createObjectStore("workspace");
+      const request = indexedDB.open("forgeplan-enterprise", DATABASE_VERSION);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        // v1: workspace document. v2: binary attachments split out of it.
+        if (!db.objectStoreNames.contains("workspace"))
+          db.createObjectStore("workspace");
+        if (!db.objectStoreNames.contains(ATTACHMENT_STORE))
+          db.createObjectStore(ATTACHMENT_STORE);
+      };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
       request.onblocked = () =>
@@ -34,8 +48,29 @@ export async function initializePersistence() {
       new LocalStorageWorkspaceRepository(window.localStorage).load();
     revision = record?.revision ?? 0;
     persistenceMode = "IndexedDB";
+    bindAttachmentDatabase(database);
   } catch (e) {
     loadFailure = e instanceof Error ? e : new Error("Không mở được IndexedDB");
+    return;
+  }
+  await migrateAttachments();
+}
+/**
+ * Moves legacy inline (base64) attachments into the attachment store, then
+ * removes stored files no saved project references. The stripped document is
+ * written by the workspace store's first save. Any failure keeps the inline
+ * copy, so no file is lost.
+ */
+async function migrateAttachments() {
+  try {
+    initial = await externalizeDocument(initial);
+  } catch (e) {
+    console.warn("Chưa chuyển được tài liệu đính kèm sang kho riêng", e);
+  }
+  try {
+    await deleteUnreferencedAttachments(referencedAttachmentIds(initial));
+  } catch (e) {
+    console.warn("Chưa dọn được tài liệu đính kèm không dùng", e);
   }
 }
 export function loadIndexedWorkspace() {

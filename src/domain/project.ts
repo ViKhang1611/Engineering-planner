@@ -7,6 +7,18 @@ export interface Assignment {
   units: number;
   quantity?: number;
 }
+/**
+ * File metadata. The bytes live in the IndexedDB attachment store, keyed by id.
+ * `data` (a base64 data URL) is present only in portable exports/imports, legacy
+ * saves not yet migrated, and the localStorage fallback.
+ */
+export interface Attachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  data?: string;
+}
 export interface Resource {
   id: string;
   name: string;
@@ -29,13 +41,7 @@ export interface Task {
   notes?: string;
   budgetCost?: number;
   actualCost?: number;
-  attachments?: {
-    id: string;
-    name: string;
-    type: string;
-    data: string;
-    size: number;
-  }[];
+  attachments?: Attachment[];
   assignments: Assignment[];
 }
 export interface Dependency {

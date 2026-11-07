@@ -3,6 +3,13 @@ import { X, Plus, Trash2, FileDown } from "lucide-react";
 import type { ScheduledTask, Task } from "../../domain/project";
 import { useProjectStore } from "../../store/useProjectStore";
 import { setPredecessors } from "../../domain/predecessors";
+import {
+  attachmentsPersistent,
+  blobToDataUrl,
+  putAttachments,
+  resolveAttachment,
+} from "../../infrastructure/persistence/attachmentStore";
+import { download } from "../../modules/data/serialization";
 export function TaskDetailDrawer({
   task,
   close,
@@ -446,39 +453,56 @@ export function TaskDetailDrawer({
                     setError("Tệp vượt 5 MB");
                     return;
                   }
+                  const input = e.target;
                   try {
-                    const data = await new Promise<string>(
-                      (resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(String(reader.result));
-                        reader.onerror = reject;
-                        reader.readAsDataURL(f);
-                      },
-                    );
-                    patch({
+                    const id = crypto.randomUUID();
+                    const type = f.type || "application/octet-stream";
+                    // Bytes go to the attachment store now; the task keeps
+                    // metadata only. Cancelling leaves an orphan that the next
+                    // start-up removes.
+                    let data: string | undefined;
+                    if (attachmentsPersistent())
+                      await putAttachments([{ id, blob: f }]);
+                    else data = await blobToDataUrl(f, type);
+                    setDraft((d) => ({
+                      ...d,
                       attachments: [
-                        ...(draft.attachments ?? []),
-                        {
-                          id: crypto.randomUUID(),
-                          name: f.name,
-                          size: f.size,
-                          type: f.type,
-                          data,
-                        },
+                        ...(d.attachments ?? []),
+                        { id, name: f.name, size: f.size, type, data },
                       ],
-                    });
+                    }));
                     setError("");
                   } catch {
-                    setError("Không đọc được tệp");
+                    setError("Không đọc hoặc lưu được tệp");
+                  } finally {
+                    input.value = "";
                   }
                 }}
               />
             </label>
             {draft.attachments?.map((a) => (
               <div className="assignment-row" key={a.id}>
-                <a href={a.data} download={a.name}>
+                <button
+                  type="button"
+                  className="text-action"
+                  onClick={async () => {
+                    try {
+                      const blob = await resolveAttachment(a);
+                      if (!blob)
+                        throw new Error(
+                          `Tệp "${a.name}" không còn trên thiết bị này.`,
+                        );
+                      download(blob, a.name);
+                      setError("");
+                    } catch (e) {
+                      setError(
+                        e instanceof Error ? e.message : "Không mở được tệp",
+                      );
+                    }
+                  }}
+                >
                   <FileDown size={14} /> {a.name}
-                </a>
+                </button>
                 <span>{Math.ceil(a.size / 1024)} KB</span>
                 <button
                   aria-label={`Xóa ${a.name}`}

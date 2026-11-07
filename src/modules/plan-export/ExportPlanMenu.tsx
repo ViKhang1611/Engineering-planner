@@ -4,6 +4,7 @@ import { useProjectStore } from "../../store/useProjectStore";
 import { useTheme } from "../../theme/ThemeProvider";
 import { Modal } from "../../shared/ui/Modal";
 import { download } from "../data/serialization";
+import { inlineAttachments } from "../../infrastructure/persistence/attachmentStore";
 import {
   planRange,
   timelineColumns,
@@ -51,14 +52,22 @@ export function ExportPlanMenu() {
     },
     range = planRange(snapshot),
     columns = timelineColumns(range.start, range.end, options?.scale ?? "day");
-  const start = () => {
+  const start = async () => {
     if (!options) return;
     setBusy(true);
     setError("");
     setMessage("Đang chuẩn bị kế hoạch…");
     setPercent(0);
-    const job: ExportJob = { snapshot: structuredClone(snapshot), options };
     try {
+      // XLSX includes Project Data for round-trip, so it needs file bytes.
+      const project =
+        options.format === "xlsx"
+          ? (await inlineAttachments(snapshot.project)).project
+          : snapshot.project;
+      const job: ExportJob = {
+        snapshot: structuredClone({ ...snapshot, project }),
+        options,
+      };
       const w = new Worker(new URL("./export.worker.ts", import.meta.url), {
         type: "module",
       });
@@ -222,7 +231,7 @@ export function ExportPlanMenu() {
               <button
                 className="primary-button"
                 disabled={busy}
-                onClick={start}
+                onClick={() => void start()}
               >
                 {busy ? "Đang xuất…" : `Tải ${options.format.toUpperCase()}`}
               </button>

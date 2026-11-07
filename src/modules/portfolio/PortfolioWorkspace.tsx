@@ -4,6 +4,7 @@ import { useWorkspaceStore } from "../../store/workspaceStore";
 import { projectSummary } from "../../store/selectors";
 import { Modal } from "../../shared/ui/Modal";
 import { ProjectSettingsForm } from "../../shared/ui/ProjectSettingsForm";
+import { CreativeHeroBanner } from "../../shared/ui/CreativeHeroBanner";
 
 export function PortfolioWorkspace() {
   const state = useWorkspaceStore((s) => s);
@@ -44,6 +45,17 @@ export function PortfolioWorkspace() {
           Tạo dự án
         </button>
       </div>
+      <CreativeHeroBanner
+        badgeCode="PF"
+        title="Không gian điều phối đa dự án"
+        description="Quản lý tập trung toàn bộ tiến độ WBS, biểu đồ Gantt, nguồn lực kỹ thuật, nghiệm thu FAT/SAT và hồ sơ baseline trong giao diện kính mờ hiện đại."
+        primaryActionLabel="Khởi tạo dự án mới"
+        onPrimaryAction={() => {
+          state.clearActionError();
+          setCreating(true);
+        }}
+        secondaryMeta={`Đang quản lý ${state.projectOrder.length} dự án độc lập`}
+      />
       <div className="portfolio-toolbar">
         <div className="search-box">
           <Search size={15} />
@@ -133,6 +145,47 @@ export function PortfolioWorkspace() {
         Khối lượng nghiệm thu được tổng hợp từ các công việc lá, theo trọng số
         thời lượng.
       </p>
+      <div className="creative-plan-section" aria-hidden="true">
+        <div className="creative-section-title">Thẻ dự án nhanh</div>
+        <div className="creative-cards-grid">
+          {rows.map((session, idx) => {
+            const p = session.project,
+              summary = projectSummary(session),
+              tones = ["kpi-tile-indigo", "kpi-tile-pink", "kpi-tile-emerald"],
+              code =
+                p.contractCode?.slice(0, 2).toUpperCase() ||
+                p.name.slice(0, 2).toUpperCase();
+            return (
+              <div key={p.id} className="creative-app-card">
+                <div className="creative-card-top">
+                  <span className={`kpi-app-badge ${tones[idx % tones.length]}`}>
+                    {code}
+                  </span>
+                  <strong>{p.name}</strong>
+                </div>
+                <p>
+                  {p.client || "Dự án kỹ thuật"} · {summary.leafCount} công việc
+                  lá · Kết thúc {summary.finishDate}
+                </p>
+                <div className="creative-card-foot">
+                  <span className="status-dot-pill">
+                    <i /> {summary.physicalPct.toFixed(1)}% hoàn thành
+                  </span>
+                  <span
+                    className="pill-open-tag"
+                    onClick={() => {
+                      state.switchProject(p.id);
+                      state.navigate("schedule");
+                    }}
+                  >
+                    Mở WBS
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
       {creating && (
         <Modal
           title="Tạo dự án kỹ thuật"

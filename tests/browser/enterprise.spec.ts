@@ -156,3 +156,62 @@ test("Kanban drag changes shared progress and spreadsheet round-trip works in br
       .getByText("Đào tạo vận hành & hồ sơ hoàn công", { exact: true }),
   ).toBeVisible();
 });
+
+test("attachments live outside the workspace document and survive reload, export and import", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  const content = "Biên bản FAT – tủ MCC-01";
+  const openDocuments = async () => {
+    await page
+      .getByRole("button", { name: "Thực hiện & Nghiệm thu", exact: true })
+      .click();
+    await page.getByRole("button", { name: /Thiết kế bản vẽ AutoCAD/ }).click();
+    await page.getByRole("button", { name: "Tài liệu", exact: true }).click();
+  };
+  await openDocuments();
+  await page.getByLabel(/Đính kèm bản vẽ/).setInputFiles({
+    name: "fat.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from(content),
+  });
+  await expect(page.getByRole("button", { name: "fat.txt", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Lưu thay đổi" }).click();
+  await expect(page.locator(".storage-state")).toContainText("Đã lưu");
+  const stored = await readStored(page);
+  const task = stored.projects[0].project.tasks.find(
+    (t: { id: string }) => t.id === "drawing",
+  );
+  expect(task.attachments).toHaveLength(1);
+  expect(task.attachments[0].data).toBeUndefined();
+  expect(JSON.stringify(stored)).not.toContain("base64");
+
+  await page.reload();
+  await expect(page.locator(".enterprise-shell")).toBeVisible();
+  await openDocuments();
+  const fileDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "fat.txt", exact: true }).click();
+  const file = await fileDownload;
+  expect(file.suggestedFilename()).toBe("fat.txt");
+  expect(await readFile((await file.path())!, "utf8")).toBe(content);
+  await page.getByRole("button", { name: "Đóng", exact: true }).click();
+
+  await page
+    .getByRole("button", { name: "Dữ liệu & Báo cáo", exact: true })
+    .click();
+  const jsonDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "JSON", exact: true }).click();
+  const json = await readFile((await (await jsonDownload).path())!, "utf8");
+  expect(json).toContain(Buffer.from(content).toString("base64"));
+  await page.locator('input[accept=".json,.csv,.xlsx"]').setInputFiles({
+    name: "project.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(json),
+  });
+  await page.getByRole("button", { name: "Thay thế dự án hiện tại" }).click();
+  await expect(page.getByRole("status")).toContainText("Đã nhập dự án");
+  await expect(page.locator(".storage-state")).toContainText("Đã lưu");
+  expect(JSON.stringify(await readStored(page))).not.toContain("base64");
+  expect(errors).toEqual([]);
+});

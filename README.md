@@ -53,7 +53,7 @@ npm run preview
 5. Kéo sang Hoàn thành đánh dấu tất cả checklist, Physical 100% và nghiệm thu tại ngày báo cáo. Kéo về Chưa bắt đầu bỏ các đánh dấu. Kéo Đang thi công ở chế độ thủ công đặt ít nhất 1%; Chờ nghiệm thu đặt 90%. Với checklist, phần trăm do checklist quyết định.
 6. S-Curve thực tế chỉ có các điểm đã ghi nhận. Mỗi ngày báo cáo lưu một điểm, cập nhật khi dữ liệu thay đổi hoặc bấm Ghi nhận tiến độ. Không tự tạo các số liệu quá khứ. Baseline giữ phạm vi/trọng số tại thời điểm chốt.
 7. EVM dùng ngân sách và chi phí task lá nhập trong Drawer, đơn vị VND. Khi chưa chốt baseline, PV dựa trên lịch hiện tại. SV trong EVM là tiền (EV−PV); Variance trong WBS là ngày.
-8. Tệp đính kèm tối đa 5 MB/tệp và 25 MB/dự án. Tệp nhập tối đa 50 MB. Dữ liệu dự án gồm tối đa 5.000 tasks và 50.000 dependencies. Các tệp nhập lỗi bị từ chối trước khi ghi.
+8. Tệp đính kèm tối đa 5 MB/tệp và 25 MB/dự án. Nội dung tệp lưu riêng trong IndexedDB, không nằm trong dữ liệu dự án; các file xuất JSON/CSV/XLSX vẫn mang theo tệp. Tệp nhập tối đa 50 MB. Dữ liệu dự án gồm tối đa 5.000 tasks và 50.000 dependencies. Các tệp nhập lỗi bị từ chối trước khi ghi.
 9. JSON là định dạng backup dễ đọc. CSV dùng các bản ghi có kiểu và payload JSON để giữ cây, liên kết, checklist, baseline, tài liệu; đây không phải CSV phẳng của MS Project. Excel có `WBS Report` để đọc, `Project Data` để round-trip. Chỉnh `WBS Report` không thay đổi `Project Data`.
 10. Đây là bản **standalone**, không có tài khoản, phân quyền hay đồng bộ nhiều người qua máy chủ. Có schema PostgreSQL và hợp đồng REST trong `docs/backend` để triển khai backend riêng; không tuyên bố backend đã chạy. IndexedDB bảo vệ xung đột giữa các tab bằng revision, không gộp thay đổi đồng thời.
 

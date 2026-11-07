@@ -49,6 +49,12 @@ import {
 } from "lucide-react";
 import { useProjectStore } from "../../../store/useProjectStore";
 import {
+  externalizeAttachments,
+  inlineAttachments,
+  missingAttachmentsMessage,
+} from "../../../infrastructure/persistence/attachmentStore";
+import { download } from "../../data/serialization";
+import {
   addCalendarDays,
   calendarDaysBetween,
   isWorkingDay,
@@ -510,24 +516,29 @@ export function ScheduleWorkspace() {
     setLag("0");
     setDialog("link");
   };
-  const exportData = () => {
-    const url = URL.createObjectURL(
-      new Blob(
-        [
-          JSON.stringify(
-            { format: "forgeplan-v1", project, baseline },
-            null,
-            2,
-          ),
-        ],
-        { type: "application/json" },
-      ),
-    );
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "forgeplan-project.json";
-    a.click();
-    URL.revokeObjectURL(url);
+  const exportData = async () => {
+    try {
+      // Portable JSON carries attachment bytes inline.
+      const { project: portable, missing } = await inlineAttachments(project);
+      download(
+        new Blob(
+          [
+            JSON.stringify(
+              { format: "forgeplan-v1", project: portable, baseline },
+              null,
+              2,
+            ),
+          ],
+          { type: "application/json" },
+        ),
+        "forgeplan-project.json",
+      );
+      if (missing.length) state.setError(missingAttachmentsMessage(missing));
+    } catch (error) {
+      state.setError(
+        `Không xuất được: ${error instanceof Error ? error.message : "lỗi đọc tài liệu"}`,
+      );
+    }
   };
   const scrollHorizontal = (
     event: React.WheelEvent,
@@ -778,7 +789,10 @@ export function ScheduleWorkspace() {
               const data: ProjectInput = raw.project ?? raw;
               if (!data || !Array.isArray(data.tasks) || !data.calendar)
                 throw new Error("Sai cấu trúc dự án.");
-              state.replace(data, raw.baseline ?? null);
+              state.replace(
+                await externalizeAttachments(data),
+                raw.baseline ?? null,
+              );
             } catch (error) {
               state.setError(
                 `Không nhập được: ${error instanceof Error ? error.message : "JSON không hợp lệ"}`,
