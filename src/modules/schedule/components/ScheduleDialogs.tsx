@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarDays, Check, Flag, Link2 } from "lucide-react";
+import { CalendarDays, Check, Flag, Link2, Trash2 } from "lucide-react";
 import { Modal } from "../../../shared/ui/Modal";
 import {
   CalendarFields,
@@ -270,6 +270,71 @@ export function LoadDialog({
   );
 }
 
+/** Confirms deleting the chosen rows; summaries take their whole branch. */
+export function DeleteTasksDialog({
+  tasks,
+  total,
+  links,
+  onConfirm,
+  close,
+}: {
+  /** Rows the user chose (not including the descendants they take along). */
+  tasks: ScheduledTask[];
+  /** Rows actually removed: the chosen ones plus all their descendants. */
+  total: number;
+  /** Dependencies that touch a removed row. */
+  links: number;
+  onConfirm: () => void;
+  close: () => void;
+}) {
+  const extra = total - tasks.length;
+  return (
+    <Modal title="Xóa công việc?" close={close}>
+      <div className="space-y-3 text-slate-600 leading-6">
+        {tasks.length === 1 ? (
+          <p>
+            Xóa{" "}
+            <strong>
+              {tasks[0].wbs} {tasks[0].name}
+            </strong>
+            {extra > 0 && <> cùng {extra} công việc con</>}?
+          </p>
+        ) : (
+          <>
+            <p>
+              Xóa {tasks.length} công việc đã chọn
+              {extra > 0 && <> cùng {extra} công việc con</>}:
+            </p>
+            <ul className="delete-task-list">
+              {tasks.slice(0, 8).map((task) => (
+                <li key={task.id}>
+                  <span className="numeric">{task.wbs}</span> {task.name}
+                </li>
+              ))}
+              {tasks.length > 8 && (
+                <li>… và {tasks.length - 8} công việc khác</li>
+              )}
+            </ul>
+          </>
+        )}
+        {links > 0 && <p>{links} liên kết liên quan cũng sẽ bị gỡ.</p>}
+        <p className="info-box">
+          Có thể hoàn tác bằng Ctrl+Z ngay sau khi xóa.
+        </p>
+      </div>
+      <div className="flex justify-end gap-2 mt-4">
+        <button className="secondary-button" onClick={close}>
+          Hủy
+        </button>
+        <button className="danger-button" onClick={onConfirm}>
+          <Trash2 size={15} />
+          Xóa {total} công việc
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
 export function HelpDialog({ close }: { close: () => void }) {
   return (
     <Modal title="Thao tác với ForgePlan" close={close}>
@@ -286,7 +351,8 @@ export function HelpDialog({ close }: { close: () => void }) {
         </p>
         <p>
           <strong>WBS:</strong> chọn dòng rồi thụt/nhô lề. Mũi tên trái/phải thu
-          gọn/mở nhóm. Mũi tên lên/xuống chuyển dòng đã chọn; Enter mở chi tiết.
+          gọn/mở nhóm. Mũi tên lên/xuống chuyển dòng đã chọn; Enter mở chi tiết;
+          Delete xóa các dòng đã chọn (Ctrl+nhấp để chọn nhiều).
         </p>
         <p>
           <strong>Cuộn:</strong> cuộn dọc dùng chung hai vùng; dùng thanh cuộn

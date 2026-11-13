@@ -244,3 +244,38 @@ test("dashboard print view hides the shell", async ({ page }) => {
   await expect(page.locator(".shell-header")).toBeHidden();
   await expect(page.locator(".kpi-grid")).toBeVisible();
 });
+test("deletes tasks from the keyboard, ribbon and detail drawer, with undo", async ({
+  page,
+}) => {
+  const rows = page.locator(".virtual-row");
+  await expect(rows).toHaveCount(12);
+  // Delete key on a summary row removes the whole branch after confirming.
+  await page.locator('[data-task-id="p1"]').click();
+  await page.locator('[data-task-id="p1"]').press("Delete");
+  const dialog = page.getByRole("dialog", { name: "Xóa công việc?" });
+  await expect(dialog).toContainText("cùng 5 công việc con");
+  await dialog.getByRole("button", { name: "Xóa 6 công việc" }).click();
+  await expect(rows).toHaveCount(6);
+  await expect(page.locator('[data-task-id="survey"]')).toHaveCount(0);
+  await page.getByRole("button", { name: "Hoàn tác Ctrl+Z" }).click();
+  await expect(rows).toHaveCount(12);
+  // Ribbon button deletes a multi-selection in one step; Cancel keeps rows.
+  await page.locator('[data-task-id="survey"]').click();
+  await page.locator('[data-task-id="plc"]').click({ modifiers: ["Control"] });
+  await page.getByRole("button", { name: "Xóa", exact: true }).click();
+  await dialog.getByRole("button", { name: "Hủy" }).click();
+  await expect(rows).toHaveCount(12);
+  await page.getByRole("button", { name: "Xóa", exact: true }).click();
+  await dialog.getByRole("button", { name: "Xóa 2 công việc" }).click();
+  await expect(rows).toHaveCount(10);
+  // Detail drawer asks inline before deleting its task.
+  await page.locator('[data-task-id="drawing"]').dblclick();
+  const drawer = page.getByRole("dialog", { name: /Chi tiết/ });
+  await drawer.getByRole("button", { name: "Xóa", exact: true }).click();
+  await drawer.getByRole("button", { name: "Xác nhận xóa" }).click();
+  await expect(drawer).toHaveCount(0);
+  await expect(page.locator('[data-task-id="drawing"]')).toHaveCount(0);
+  await expect(page.locator(".storage-state")).toContainText("Đã lưu");
+  await page.reload();
+  await expect(page.locator(".virtual-row")).toHaveCount(9);
+});

@@ -10,6 +10,7 @@ import {
   LEGACY_STORAGE_KEY,
 } from "../src/infrastructure/persistence/workspaceRepository";
 import { createSeed } from "../src/modules/schedule/data/seed";
+import { withDescendants } from "../src/modules/schedule/model/createScheduleSession";
 import type { ProjectSettingsInput } from "../src/domain/workspace";
 
 class MemoryStorage {
@@ -275,5 +276,50 @@ describe("project duplicate and delete", () => {
     expect(store.getState().deleteProject(first)).toBe(false);
     expect(store.getState().actionError).toContain("cuối cùng");
     expect(store.getState().projectOrder).toEqual([first]);
+  });
+});
+
+describe("task delete", () => {
+  it("removes a summary with its whole branch and every link touching it, undoably", () => {
+    const { active } = setup();
+    const before = active().project;
+    expect(withDescendants(before.tasks, ["p1"])).toEqual(
+      new Set(["p1", "survey", "drawing", "bom", "panel", "fat"]),
+    );
+    expect(active().removeTasks(["p1"])).toBe(true);
+    const after = active().project;
+    expect(after.tasks.some((t) => t.id === "p1" || t.parentId === "p1")).toBe(
+      false,
+    );
+    expect(after.tasks.length).toBe(before.tasks.length - 6);
+    const gone = new Set(["p1", "survey", "drawing", "bom", "panel", "fat"]);
+    expect(
+      after.dependencies.some(
+        (l) => gone.has(l.predecessorId) || gone.has(l.successorId),
+      ),
+    ).toBe(false);
+    expect(active().selected).toEqual([]);
+    active().undo();
+    expect(active().project.tasks).toEqual(before.tasks);
+    expect(active().project.dependencies).toEqual(before.dependencies);
+  });
+
+  it("deletes several selected rows in one undo step and persists it", () => {
+    const { active, store, repository } = setup();
+    const count = active().project.tasks.length;
+    expect(active().removeTasks(["survey", "plc", "missing"])).toBe(true);
+    expect(active().project.tasks.length).toBe(count - 2);
+    expect(active().history.length).toBe(1);
+    const id = store.getState().activeProjectId;
+    const reloaded = createWorkspaceStore(repository).getState().projects[id];
+    expect(reloaded.project.tasks.map((t) => t.id)).not.toContain("plc");
+  });
+
+  it("reports an error instead of committing when nothing valid is chosen", () => {
+    const { active } = setup();
+    expect(active().removeTasks(["missing"])).toBe(false);
+    expect(active().removeTasks([])).toBe(false);
+    expect(active().history.length).toBe(0);
+    expect(active().error).toContain("Chọn công việc");
   });
 });

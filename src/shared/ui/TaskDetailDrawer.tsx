@@ -3,6 +3,7 @@ import { X, Plus, Trash2, FileDown } from "lucide-react";
 import type { ScheduledTask, Task } from "../../domain/project";
 import { useProjectStore } from "../../store/useProjectStore";
 import { setPredecessors } from "../../domain/predecessors";
+import { withDescendants } from "../../modules/schedule/model/createScheduleSession";
 import {
   attachmentsPersistent,
   blobToDataUrl,
@@ -32,6 +33,8 @@ export function TaskDetailDrawer({
   }, []);
   const [tab, setTab] = useState("Thông tin");
   const [error, setError] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const removeCount = withDescendants(state.project.tasks, [task.id]).size;
   const [links, setLinks] = useState(() =>
     state.project.dependencies
       .filter((l) => l.successorId === task.id)
@@ -532,10 +535,43 @@ export function TaskDetailDrawer({
         )}
       </div>
       <footer>
-        <button onClick={close}>Đóng</button>
-        <button className="primary-button" onClick={save}>
-          Lưu thay đổi
-        </button>
+        {confirmDelete ? (
+          <>
+            <span className="drawer-delete-confirm" role="alert">
+              Xóa {removeCount > 1 ? `${removeCount} công việc` : "công việc"}?
+            </span>
+            <button onClick={() => setConfirmDelete(false)}>Hủy</button>
+            <button
+              className="danger-button"
+              onClick={() => {
+                if (state.removeTask(task.id)) close();
+                else setConfirmDelete(false);
+              }}
+            >
+              <Trash2 size={14} />
+              Xác nhận xóa
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              className="danger-text-button"
+              title={
+                removeCount > 1
+                  ? `Xóa cùng ${removeCount - 1} công việc con`
+                  : "Xóa công việc"
+              }
+              onClick={() => setConfirmDelete(true)}
+            >
+              <Trash2 size={14} />
+              Xóa
+            </button>
+            <button onClick={close}>Đóng</button>
+            <button className="primary-button" onClick={save}>
+              Lưu thay đổi
+            </button>
+          </>
+        )}
       </footer>
     </aside>
   );

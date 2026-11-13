@@ -223,3 +223,32 @@ test("header bell is an accessible link to the dashboard", async ({ page }) => {
     page.locator(".header-cloud-chip, .header-profile-ring, .window-dots"),
   ).toHaveCount(0);
 });
+
+test("deletes the active project from its settings page", async ({ page }) => {
+  const settings = page.getByRole("button", {
+    name: "Thiết lập dự án",
+    exact: true,
+  });
+  await settings.click();
+  // The only project cannot be deleted.
+  await expect(
+    page.getByRole("button", { name: "Xóa dự án", exact: true }),
+  ).toBeDisabled();
+  await page
+    .getByRole("button", { name: "Danh mục dự án", exact: true })
+    .click();
+  const name = (
+    await page.locator(".enterprise-table .project-link").first().innerText()
+  ).trim();
+  await page.getByRole("button", { name: `Nhân bản ${name}` }).click();
+  await settings.click();
+  await page.getByRole("button", { name: "Xóa dự án", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Xóa dự án?" })).toContainText(
+    `${name} (bản sao)`,
+  );
+  await page.getByRole("button", { name: "Xóa vĩnh viễn" }).click();
+  await expect(page.locator(".enterprise-table tbody tr")).toHaveCount(1);
+  await expect(page.locator(".storage-state")).toContainText("Đã lưu");
+  await page.reload();
+  await expect(page.locator(".enterprise-table tbody tr")).toHaveCount(1);
+});

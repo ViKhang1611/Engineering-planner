@@ -18,6 +18,7 @@ import {
   Search,
   Settings2,
   ShieldCheck,
+  Trash2,
   Undo2,
   Upload,
   X,
@@ -124,6 +125,7 @@ export interface CommandRibbonProps {
   onAddTask: () => void;
   onIndent: (outdent: boolean) => void;
   onOpenLinks: () => void;
+  onDelete: () => void;
   onOpenBaseline: () => void;
   onToggleCompare: () => void;
   onToggleCritical: () => void;
@@ -161,6 +163,14 @@ export function CommandRibbon(p: CommandRibbonProps) {
         disabled={!p.canLink}
       >
         Liên kết FS
+      </ToolButton>
+      <ToolButton
+        icon={<Trash2 size={15} />}
+        onClick={p.onDelete}
+        disabled={!p.hasSelection}
+        title="Xóa công việc đã chọn (Delete)"
+      >
+        Xóa
       </ToolButton>
       <i className="ribbon-divider" />
       <ToolButton icon={<Flag size={15} />} onClick={p.onOpenBaseline}>

@@ -12,6 +12,7 @@ import { projectSummary } from "../../store/selectors";
 import { Modal } from "../../shared/ui/Modal";
 import { ProjectSettingsForm } from "../../shared/ui/ProjectSettingsForm";
 import { CreativeHeroBanner } from "../../shared/ui/CreativeHeroBanner";
+import { DeleteProjectDialog } from "../../shared/ui/DeleteProjectDialog";
 
 export function PortfolioWorkspace() {
   const state = useWorkspaceStore((s) => s);
@@ -220,41 +221,11 @@ export function PortfolioWorkspace() {
           })}
         </div>
       </div>
-      {deleting && state.projects[deleting] && (
-        <Modal title="Xóa dự án?" close={() => setDeleting(null)}>
-          <p>
-            Xóa vĩnh viễn{" "}
-            <strong>{state.projects[deleting].project.name}</strong> cùng WBS,
-            liên kết, baseline và lịch sử tiến độ trên thiết bị này. Không thể
-            hoàn tác.
-          </p>
-          <p className="info-box">
-            Nếu cần giữ lại, mở dự án rồi xuất JSON ở Dữ liệu & Báo cáo trước
-            khi xóa.
-          </p>
-          {state.actionError && (
-            <p role="alert" className="inline-error">
-              {state.actionError}
-            </p>
-          )}
-          <div className="flex justify-end gap-2">
-            <button
-              className="secondary-button"
-              onClick={() => setDeleting(null)}
-            >
-              Hủy
-            </button>
-            <button
-              className="danger-button"
-              onClick={() => {
-                if (state.deleteProject(deleting)) setDeleting(null);
-              }}
-            >
-              <Trash2 size={15} />
-              Xóa vĩnh viễn
-            </button>
-          </div>
-        </Modal>
+      {deleting && (
+        <DeleteProjectDialog
+          projectId={deleting}
+          close={() => setDeleting(null)}
+        />
       )}
       {creating && (
         <Modal

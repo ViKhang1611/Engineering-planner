@@ -36,7 +36,9 @@ export interface ScheduleSession extends Snapshot {
   select: (id: string, multi?: boolean) => void;
   toggle: (id: string) => void;
   addTask: () => void;
-  removeTask: (id: string) => void;
+  removeTask: (id: string) => boolean;
+  /** Deletes the given tasks with all their descendants and links (undoable). */
+  removeTasks: (ids: readonly string[]) => boolean;
   indent: (outdent: boolean) => void;
   link: (link: Omit<Dependency, "id">) => boolean;
   unlink: (id: string) => void;
@@ -54,6 +56,28 @@ export interface ScheduleSession extends Snapshot {
 // (which would corrupt undo snapshots that share objects), frozen subtrees
 // let immer skip unchanged parts such as baselines when finalizing a commit.
 setAutoFreeze(true);
+
+/**
+ * The existing tasks among `ids` plus every descendant of them: exactly what
+ * deleting those rows removes from the WBS.
+ */
+export function withDescendants(
+  tasks: readonly Pick<Task, "id" | "parentId">[],
+  ids: readonly string[],
+): Set<string> {
+  const known = new Set(tasks.map((task) => task.id));
+  const result = new Set(ids.filter((id) => known.has(id)));
+  let changed = result.size > 0;
+  while (changed) {
+    changed = false;
+    for (const task of tasks)
+      if (task.parentId && result.has(task.parentId) && !result.has(task.id)) {
+        result.add(task.id);
+        changed = true;
+      }
+  }
+  return result;
+}
 
 /** Undo/redo depth per project session. */
 export const HISTORY_LIMIT = 100;
@@ -215,31 +239,23 @@ export function createScheduleSession(
       )
         get().select(id);
     },
-    removeTask: (id) => {
-      if (
-        get().commit((project) => {
-          const remove = new Set([id]);
-          let changed = true;
-          while (changed) {
-            changed = false;
-            for (const task of project.tasks)
-              if (
-                task.parentId &&
-                remove.has(task.parentId) &&
-                !remove.has(task.id)
-              ) {
-                remove.add(task.id);
-                changed = true;
-              }
-          }
-          project.tasks = project.tasks.filter((task) => !remove.has(task.id));
-          project.dependencies = project.dependencies.filter(
-            (link) =>
-              !remove.has(link.predecessorId) && !remove.has(link.successorId),
-          );
-        }, "Đã xóa công việc; có thể hoàn tác")
-      )
-        set({ selected: [] });
+    removeTask: (id) => get().removeTasks([id]),
+    removeTasks: (ids) => {
+      const state = get();
+      const remove = withDescendants(state.project.tasks, ids);
+      if (!remove.size) {
+        set({ error: "Chọn công việc cần xóa." });
+        return false;
+      }
+      const ok = state.commit((project) => {
+        project.tasks = project.tasks.filter((task) => !remove.has(task.id));
+        project.dependencies = project.dependencies.filter(
+          (link) =>
+            !remove.has(link.predecessorId) && !remove.has(link.successorId),
+        );
+      }, `Đã xóa ${remove.size} công việc; nhấn Ctrl+Z để hoàn tác`);
+      if (ok) set({ selected: [] });
+      return ok;
     },
     indent: (outdent) => {
       const id = get().selected.at(-1);

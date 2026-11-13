@@ -49,6 +49,7 @@ import {
 import {
   BaselineDialog,
   CalendarDialog,
+  DeleteTasksDialog,
   HelpDialog,
   LinkDialog,
   LoadDialog,
@@ -57,6 +58,7 @@ import {
 import { useGanttDrag } from "./useGanttDrag";
 import { useColumnPrefs } from "./useColumnPrefs";
 import { shiftLabel, workWeekLabel } from "../../../domain/calendarText";
+import { withDescendants } from "../model/createScheduleSession";
 
 type Dialog = "link" | "calendar" | "help" | "load" | "baseline" | null;
 
@@ -96,6 +98,7 @@ export function ScheduleWorkspace() {
       select: s.select,
       toggle: s.toggle,
       addTask: s.addTask,
+      removeTasks: s.removeTasks,
       indent: s.indent,
       link: s.link,
       commit: s.commit,
@@ -125,6 +128,7 @@ export function ScheduleWorkspace() {
     [query, setQuery] = useState(""),
     [editor, setEditor] = useState<string | null>(null),
     [dialog, setDialog] = useState<Dialog>(null),
+    [deleting, setDeleting] = useState<string[] | null>(null),
     [linkDefaults, setLinkDefaults] = useState({
       predecessor: "",
       successor: "",
@@ -326,8 +330,22 @@ export function ScheduleWorkspace() {
 
   // Row callbacks read the latest render through a ref, so the object passed
   // to every memoized row keeps one identity.
-  const latestRef = useRef({ rows, virtualizer, collapsed, project, dayWidth });
-  latestRef.current = { rows, virtualizer, collapsed, project, dayWidth };
+  const latestRef = useRef({
+    rows,
+    virtualizer,
+    collapsed,
+    project,
+    dayWidth,
+    selected,
+  });
+  latestRef.current = {
+    rows,
+    virtualizer,
+    collapsed,
+    project,
+    dayWidth,
+    selected,
+  };
   const rowActions = useMemo<RowActions>(
     () => ({
       select: (id, multi) => session.select(id, multi),
@@ -352,6 +370,12 @@ export function ScheduleWorkspace() {
         if (event.key === "Enter") {
           event.preventDefault();
           setEditor(task.id);
+        }
+        // Only when the row itself has focus, never while typing in a cell.
+        if (event.key === "Delete" && event.target === event.currentTarget) {
+          event.preventDefault();
+          const { selected } = latestRef.current;
+          setDeleting(selected.includes(task.id) ? selected : [task.id]);
         }
         if (
           event.key === "ArrowLeft" &&
@@ -465,6 +489,21 @@ export function ScheduleWorkspace() {
     setOverloadOnly(false);
   };
   const lastSelected = selected.at(-1);
+  const deleteTargets = useMemo(
+    () =>
+      (deleting ?? [])
+        .map((id) => byId.get(id))
+        .filter((task): task is ScheduledTask => !!task),
+    [deleting, byId],
+  );
+  const deleteSet = useMemo(
+    () =>
+      withDescendants(
+        project.tasks,
+        deleteTargets.map((task) => task.id),
+      ),
+    [project.tasks, deleteTargets],
+  );
 
   return (
     <section className="schedule-module" aria-label="Module lập tiến độ">
@@ -492,6 +531,7 @@ export function ScheduleWorkspace() {
         onAddTask={session.addTask}
         onIndent={session.indent}
         onOpenLinks={openLinks}
+        onDelete={() => setDeleting(selected)}
         onOpenBaseline={() => setDialog("baseline")}
         onToggleCompare={() => setCompare(!compare)}
         onToggleCritical={() => setCritical(!critical)}
@@ -752,6 +792,26 @@ export function ScheduleWorkspace() {
         />
       )}
       {dialog === "help" && <HelpDialog close={closeDialog} />}
+      {deleteTargets.length > 0 && (
+        <DeleteTasksDialog
+          tasks={deleteTargets}
+          total={deleteSet.size}
+          links={
+            project.dependencies.filter(
+              (link) =>
+                deleteSet.has(link.predecessorId) ||
+                deleteSet.has(link.successorId),
+            ).length
+          }
+          onConfirm={() => {
+            if (session.removeTasks(deleteTargets.map((task) => task.id))) {
+              if (editor && deleteSet.has(editor)) setEditor(null);
+              setDeleting(null);
+            }
+          }}
+          close={() => setDeleting(null)}
+        />
+      )}
       {proposal && (
         <ProposalDialog
           proposal={proposal}

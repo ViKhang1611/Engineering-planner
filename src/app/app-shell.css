@@ -599,6 +599,33 @@
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
 }
 
+.danger-zone {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-color: var(--planner-critical);
+}
+
+.danger-zone h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--danger-text);
+}
+
+.danger-zone p {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-slate-500);
+}
+
+.danger-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .settings-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
